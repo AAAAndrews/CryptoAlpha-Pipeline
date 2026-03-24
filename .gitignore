@@ -1,0 +1,46 @@
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.dist/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS/editor files
+.DS_Store
+.vscode/
+
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+
+# Credential files
+**/credentials.txt
+**/*credentials*.txt
+**/brain_credentials.txt
+
+# Common local secret files
+secrets.txt
+secrets.json
+local.secrets.*
+
+# Local safety backup of old git metadata
+.git_history_backup_*/
+.git_reinit_backup_*/

@@ -1,0 +1,240 @@
+[
+    {
+        "timestamp": "2025-12-25T11:05:19.265193",
+        "symbol": "1000SHIBUSDC",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 502 Bad Gateway (try 3/3)"
+    },
+    {
+        "timestamp": "2025-12-25T12:41:45.565974",
+        "symbol": "BTCBUSD_210129",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCBUSD_210129&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766637610734"
+    },
+    {
+        "timestamp": "2025-12-25T12:42:20.393566",
+        "symbol": "BTCBUSD_210226",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCBUSD_210226&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766637645579"
+    },
+    {
+        "timestamp": "2025-12-25T12:44:29.492788",
+        "symbol": "BTCSTUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCSTUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766637774902"
+    },
+    {
+        "timestamp": "2025-12-25T12:48:45.281867",
+        "symbol": "BTCUSDT_210326",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_210326&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638022842"
+    },
+    {
+        "timestamp": "2025-12-25T12:49:21.727076",
+        "symbol": "BTCUSDT_210625",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_210625&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638065299"
+    },
+    {
+        "timestamp": "2025-12-25T12:49:56.411306",
+        "symbol": "BTCUSDT_210924",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_210924&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638102105"
+    },
+    {
+        "timestamp": "2025-12-25T12:50:32.898385",
+        "symbol": "BTCUSDT_211231",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_211231&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638136425"
+    },
+    {
+        "timestamp": "2025-12-25T12:51:12.016199",
+        "symbol": "BTCUSDT_220325",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 502 Bad Gateway (try 3/3)"
+    },
+    {
+        "timestamp": "2025-12-25T12:52:02.409933",
+        "symbol": "BTCUSDT_220624",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 502 Bad Gateway (try 3/3)"
+    },
+    {
+        "timestamp": "2025-12-25T12:52:43.087677",
+        "symbol": "BTCUSDT_220930",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_220930&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638262423"
+    },
+    {
+        "timestamp": "2025-12-25T12:53:20.165531",
+        "symbol": "BTCUSDT_221230",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_221230&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638303103"
+    },
+    {
+        "timestamp": "2025-12-25T12:53:55.214641",
+        "symbol": "BTCUSDT_230331",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_230331&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638340178"
+    },
+    {
+        "timestamp": "2025-12-25T12:54:29.620174",
+        "symbol": "BTCUSDT_230630",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_230630&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638375228"
+    },
+    {
+        "timestamp": "2025-12-25T12:55:05.136435",
+        "symbol": "BTCUSDT_230929",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_230929&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638409634"
+    },
+    {
+        "timestamp": "2025-12-25T12:55:40.165317",
+        "symbol": "BTCUSDT_231229",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_231229&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638445150"
+    },
+    {
+        "timestamp": "2025-12-25T12:56:15.580225",
+        "symbol": "BTCUSDT_240329",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_240329&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638480182"
+    },
+    {
+        "timestamp": "2025-12-25T12:56:56.525738",
+        "symbol": "BTCUSDT_240628",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "The request failed, the maximum number of retries has been reached: HTTPSConnectionPool(host='fapi.binance.com', port=443): Max retries exceeded with url: /fapi/v1/continuousKlines?pair=BTCUSDT_240628&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638515597 (Caused by ProxyError('Cannot connect to proxy.', ConnectionResetError(10054, 'The remote host forcibly closed an existing connection.', None, 10054, None)))"
+    },
+    {
+        "timestamp": "2025-12-25T12:57:31.406383",
+        "symbol": "BTCUSDT_240927",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_240927&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638556540"
+    },
+    {
+        "timestamp": "2025-12-25T12:58:06.963738",
+        "symbol": "BTCUSDT_241227",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_241227&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638591420"
+    },
+    {
+        "timestamp": "2025-12-25T12:58:40.794927",
+        "symbol": "BTCUSDT_250328",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_250328&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638626979"
+    },
+    {
+        "timestamp": "2025-12-25T12:59:20.944736",
+        "symbol": "BTCUSDT_250627",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 502 Bad Gateway (try 3/3)"
+    },
+    {
+        "timestamp": "2025-12-25T12:59:58.479964",
+        "symbol": "BTCUSDT_250926",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_250926&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638700959"
+    },
+    {
+        "timestamp": "2025-12-25T13:00:34.373352",
+        "symbol": "BTCUSDT_251226",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_251226&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638738495"
+    },
+    {
+        "timestamp": "2025-12-25T13:01:09.850508",
+        "symbol": "BTCUSDT_260327",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT_260327&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000&endTime=1766638774390"
+    },
+    {
+        "timestamp": "2026-01-13T18:34:45.876060+00:00",
+        "symbol": "0GUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=0GUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768329194778"
+    },
+    {
+        "timestamp": "2026-01-13T18:36:56.733811+00:00",
+        "symbol": "BREVUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BREVUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768329325959"
+    },
+    {
+        "timestamp": "2026-01-13T18:37:31.280273+00:00",
+        "symbol": "BTCSTUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCSTUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=1615510800001&endTime=1768329360503"
+    },
+    {
+        "timestamp": "2026-01-13T18:38:28.000371+00:00",
+        "symbol": "COLLECTUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=COLLECTUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768329417253"
+    },
+    {
+        "timestamp": "2026-01-13T18:39:55.548314+00:00",
+        "symbol": "FOGOUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=FOGOUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768329504785"
+    },
+    {
+        "timestamp": "2026-01-13T18:43:37.433321+00:00",
+        "symbol": "MAGMAUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=MAGMAUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768329726450"
+    },
+    {
+        "timestamp": "2026-01-13T18:48:22.740537+00:00",
+        "symbol": "XAGUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=XAGUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768330011906"
+    },
+    {
+        "timestamp": "2026-01-13T18:48:54.481063+00:00",
+        "symbol": "XAUUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=XAUUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=1766703600001&endTime=1768330043563"
+    },
+    {
+        "timestamp": "2026-01-13T18:49:41.813955+00:00",
+        "symbol": "ZAMAUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=ZAMAUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768330090773"
+    }
+]
