@@ -1,4 +1,4 @@
-# CryptoDataProviders Project description
+﻿# CryptoDataProviders Project description
 
 ## Project introduction
 
@@ -11,7 +11,6 @@
 1. **providers/** - data source provider
    - `binance_api/` - Binance REST API interface
    - `binance_bulk/` - Binance Batch historical data download
-   - `ccxt_api/` - CCXT Unified interface for multiple exchanges
 
 2. **utils/** - tool module
    - `common.py` - General tool functions (time analysis, progress tracking, error log)
@@ -26,7 +25,6 @@
 
 4. **examples/** - Usage example
    - `example_binance_api.py` - Binance API Usage example
-   - `example_ccxt.py` - CCXT Usage example
    - `example_bulk_download.py` - Batch download example
    - `example_trading_pairs.py` - Trading pair acquisition example
 
@@ -90,23 +88,20 @@ for batch_df in fetch_klines(
 ):
     print(batch_df)
 
-# CCXT Multiple exchanges
-from providers.ccxt_api.fetcher import CCXTKlineFetcher
 
-fetcher = CCXTKlineFetcher(exchange="binance", kline_type="spot")
 for batch_df in fetcher.fetch_klines(...):
     print(batch_df)
 ```
 
 ## Relationship to original project
 
-### CryptoDB_feather（original project)
+### CryptoDB_feather锛坥riginal project)
 
 - **Positioning**: Complete database system
 - **Function**: Data acquisition + storage + management + reading
 - **Applicable**: Scenarios where local database needs to be built
 
-### CryptoDataProviders（new project)
+### CryptoDataProviders锛坣ew project)
 
 - **Positioning**: Pure data acquisition library
 - **Function**: Data acquisition only
@@ -128,28 +123,22 @@ from CryptoDB_feather.core.storage import save_to_feather
 
 ```
 CryptoDataProviders/
-│
-├── providers/           # data source layer
-│   ├── binance_api/    # Binance Native API
-│   ├── binance_bulk/   # Binance Batch download
-│   └── ccxt_api/       # CCXT unified interface
-│
-├── utils/              # tool layer
-│   ├── common.py       # general tools
-│   └── trading_pairs.py # Trading pair management
-│
-├── examples/           # Sample layer
-│   └── ...
-│
-└── config.py           # Configuration layer
+鈹?鈹溾攢鈹€ providers/           # data source layer
+鈹?  鈹溾攢鈹€ binance_api/    # Binance Native API
+鈹?  鈹溾攢鈹€ binance_bulk/   # Binance Batch download
+鈹?鈹溾攢鈹€ utils/              # tool layer
+鈹?  鈹溾攢鈹€ common.py       # general tools
+鈹?  鈹斺攢鈹€ trading_pairs.py # Trading pair management
+鈹?鈹溾攢鈹€ examples/           # Sample layer
+鈹?  鈹斺攢鈹€ ...
+鈹?鈹斺攢鈹€ config.py           # Configuration layer
 ```
 
 ## test status
 
-✅ All module import tests passed
-✅ All dependent packages have been installed
-✅ Basic function test passed
-✅ CCXT Exchange initialization passed
+鉁?All module import tests passed
+鉁?All dependent packages have been installed
+鉁?Basic function test passed
 
 ## Follow-up development
 

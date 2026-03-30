@@ -1,6 +1,6 @@
-# CryptoDB_feather Development documentation
+﻿# CryptoDB_feather Development documentation
 
-> **🔄 The project has been restructured (2026-01-14)**: The data source function has been separated into [`CryptoDataProviders`](../CryptoDataProviders/) project. This project now focuses on the storage layer. See [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) for details
+> **馃攧 The project has been restructured (2026-01-14)**: The data source function has been separated into [`CryptoDataProviders`](../CryptoDataProviders/) project. This project now focuses on the storage layer. See [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) for details
 
 ## 1. Project overview
 
@@ -9,31 +9,12 @@
 ### Core features:
 - **High-performance storage**: Using the Feather format, read and write much faster than CSV or SQL databases.
 - **Hybrid update mode**:
-  - **REST API**：pass`CryptoDataProviders` Get recent data for incremental updates.
-  - **Bulk Download**：pass`CryptoDataProviders` Batch download historical data from Binance S3.
-- **Thread safety**: built-in file system lock, supports multi-threaded concurrent updates, and can automatically synchronize metadata to`dbinfo.json`。
-- **Data source independent**: Pass`CryptoDataProviders` Unified interface supports multiple data sources.
+  - **REST API**锛歱ass`CryptoDataProviders` Get recent data for incremental updates.
+  - **Bulk Download**锛歱ass`CryptoDataProviders` Batch download historical data from Binance S3.
+- **Thread safety**: built-in file system lock, supports multi-threaded concurrent updates, and can automatically synchronize metadata to`dbinfo.json`銆?- **Data source independent**: Pass`CryptoDataProviders` Unified interface supports multiple data sources.
 
 ### Architectural relationship:
 
-```
-┌─────────────────────────────────────────────────────┐
-│              scripts/ (Maintenance script)│
-│  - update_api.py (Incremental updates)│
-│  - update_bulk.py (Batch download)│
-│  - cleanup_fake_data.py (cleanup)│
-└──────────────┬──────────────────┬───────────────────┘
-               │                  │
-               ▼                  ▼
-┌──────────────────────┐   ┌────────────────────────┐
-│ CryptoDataProviders  │   │  CryptoDB_feather      │
-│  (data source layer)│   │  (storage layer)│
-│                      │   │                        │
-│ - Binance API       │◄──┤ - db_manager.py        │
-│ - CCXT API          │   │ - bulk_manager.py      │
-│ - Binance Bulk      │   │ - storage.py           │
-│ - Trading Pairs     │   │ - reader.py            │
-└──────────────────────┘   └────────────────────────┘
 ```
 
 ---
@@ -42,16 +23,16 @@
 
 ```text
 CryptoDB_feather/
-├── core/                      # Storage layer core module
-│   ├── storage.py             # Feather File reading and writing, deduplication and path synchronization
-│   ├── bulk_manager.py        # Batch historical data download management
-│   ├── db_manager.py          # REST API Incremental update management
-│   ├── reader.py              # Data reading interface
-│   └── __init__.py            # Export core functionality
-├── config.py                  # Global configuration (DB path, proxy, etc.)
-├── DEVELOPMENT.md             # This document
-├── REFACTORING_SUMMARY.md     # Refactoring summary
-└── research_nb.ipynb          # research notebook
+鈹溾攢鈹€ core/                      # Storage layer core module
+鈹?  鈹溾攢鈹€ storage.py             # Feather File reading and writing, deduplication and path synchronization
+鈹?  鈹溾攢鈹€ bulk_manager.py        # Batch historical data download management
+鈹?  鈹溾攢鈹€ db_manager.py          # REST API Incremental update management
+鈹?  鈹溾攢鈹€ reader.py              # Data reading interface
+鈹?  鈹斺攢鈹€ __init__.py            # Export core functionality
+鈹溾攢鈹€ config.py                  # Global configuration (DB path, proxy, etc.)
+鈹溾攢鈹€ DEVELOPMENT.md             # This document
+鈹溾攢鈹€ REFACTORING_SUMMARY.md     # Refactoring summary
+鈹斺攢鈹€ research_nb.ipynb          # research notebook
 ```
 
 **Notice**:`providers/`, `utils/`, `scripts/` Migrated, see [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) for details
@@ -72,8 +53,7 @@ CryptoDB_feather/
   - **Purpose**: thread-safely allocate directories on disk and`dbinfo.json` The "logical-physical" path mapping in the file is synchronized to ensure the traceability of data files.
 
 ### 3.2 Incremental Update Manager (`core/db_manager.py`)
-- **`run_ccxt_updater`**: Updated with CCXT engine.
-- **`run_binance_rest_updater`**: Updated using Binance’s dedicated REST interface, supported`spot`, `swap`, `mark`, `index` and other K-lines.
+- **`run_binance_rest_updater`**: Updated using Binance鈥檚 dedicated REST interface, supported`spot`, `swap`, `mark`, `index` and other K-lines.
 - **Logic**: Automatically detect the latest local OHLCV, capture only missing data segments, and automatically merge and remove duplicates.
 
 ### 3.3 Data reading interface (`core/reader.py`)
@@ -86,22 +66,20 @@ CryptoDB_feather/
 
 ### 4.1 Environmental preparation
 ```bash
-pip install pandas pyarrow requests ccxt rich tqdm
 ```
 
 ### 4.2 Basic configuration
-exist`config.py` Medium settings`DB_ROOT_PATH`：
-```python
+exist`config.py` Medium settings`DB_ROOT_PATH`锛?```python
 DB_ROOT_PATH = "C:/Your/Data/Path"
 ```
 
 ### 4.3 Common operating procedures
 
 #### A. Establishing a database for the first time (large-scale historical data)
-run`scripts/update_bulk.py`，Configure a longer number of concurrent threads.
+run`scripts/update_bulk.py`锛孋onfigure a longer number of concurrent threads.
 
 #### B. Daily maintenance incremental updates
-run`scripts/update_api.py`，It quickly checks the local status and supplements the latest K-line.
+run`scripts/update_api.py`锛孖t quickly checks the local status and supplements the latest K-line.
 
 #### C. Data analysis reading
 ```python
@@ -126,8 +104,7 @@ df = load_multi_klines(
 ---
 
 ## 6. Maintenance and error handling
-All failed crawling tasks will be automatically recorded`db_root_path/errors/errors.json`。
-If the task needs to be retried, the system will dynamically generate`retry_pairs.json`，This facilitates the subsequent execution of targeted patches.
+All failed crawling tasks will be automatically recorded`db_root_path/errors/errors.json`銆?If the task needs to be retried, the system will dynamically generate`retry_pairs.json`锛孴his facilitates the subsequent execution of targeted patches.
 
 ---
 *Document version: v1.1 (Last Updated: 2026-01-13)*

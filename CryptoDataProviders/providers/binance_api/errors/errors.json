@@ -236,5 +236,26 @@
         "interval": "1h",
         "kline_type": "swap",
         "error_message": "Request failed, maximum retries reached: 400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=ZAMAUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1768330090773"
+    },
+    {
+        "timestamp": "2026-03-30T14:02:37.251409+00:00",
+        "symbol": "0GUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "The request failed, the maximum number of retries has been reached:400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=0GUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1774879266395"
+    },
+    {
+        "timestamp": "2026-03-30T14:03:35.418666+00:00",
+        "symbol": "ACUUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "The request failed, the maximum number of retries has been reached:400 Client Error: Bad Request for url: https://fapi.binance.com/fapi/v1/continuousKlines?pair=ACUUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1774879324292"
+    },
+    {
+        "timestamp": "2026-03-30T14:04:54.437632+00:00",
+        "symbol": "AMZNUSDT",
+        "interval": "1h",
+        "kline_type": "swap",
+        "error_message": "The request failed, the maximum number of retries has been reached:HTTPConnectionPool(host='fapi.binance.com', port=80): Max retries exceeded with url: /fapi/v1/continuousKlines?pair=AMZNUSDT&interval=1h&limit=1000&contractType=PERPETUAL&startTime=946684800000000&endTime=1774879384107 (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ECD46B4BE0>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
     }
 ]

@@ -9,7 +9,7 @@ import os
 import re
 import joblib
 from Cross_Section_Factor.deap_alpha.ops.old_version_ops import *
-from worldquant_utils.wqbrain_client import BrainBatchAlpha
+
 from copy import deepcopy
 from deap import algorithms
 warnings.simplefilter("ignore")

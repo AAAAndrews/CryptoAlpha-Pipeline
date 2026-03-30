@@ -1,1 +1,0 @@
-# CMC Historical Scraper Package

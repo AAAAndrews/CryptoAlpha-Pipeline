@@ -1,5 +1,5 @@
 """
-Script: Use Binance REST API or CCXT for incremental updates.
+Script: Use Binance REST API for incremental updates.
 Purpose: Suitable for daily maintenance, synchronizing the K-line data of the latest hours/days.
 
 rely:

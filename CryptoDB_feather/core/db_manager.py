@@ -1,7 +1,6 @@
-import json
 import os
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from typing import Optional
 
 import pandas as pd
 from rich.console import Console
@@ -9,14 +8,11 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 from rich.table import Table
 
 from CryptoDataProviders.providers.binance_api import fetch_klines as binance_fetch_klines
-from CryptoDataProviders.providers.ccxt_api import fetch_klines as ccxt_fetch_klines, resolve_exchange_profile
-from CryptoDataProviders.providers.ccxt_api.utils import timeframe_to_milliseconds
-from CryptoDataProviders.utils.common import parse_time, log_error_to_json
+from CryptoDataProviders.utils.common import log_error_to_json
 from .storage import read_feather, upsert_klines, get_synced_filepath
 
 
 DEFAULT_START_MS = int(datetime(2000, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
-BASE_CANDLE_COLUMNS = ["timestamp", "open", "high", "low", "close", "volume"]
 
 
 def log_error(db_root_path: str, exchange: str, symbol: str, kline_type: str, interval: str, error_msg: str):
@@ -46,22 +42,6 @@ def log_error(db_root_path: str, exchange: str, symbol: str, kline_type: str, in
         "interval": interval
     }
     log_error_to_json(error_dir, error_info, retry_info)
-
-
-def _build_candle_columns(length: int) -> list[str]:
-    """
-    Dynamically construct DataFrame column names based on the returned K-line data length.
-    
-    parameter:
-        length (int): Data row length.
-        
-    return:
-        list[str]: List of column names.
-    """
-    if length <= len(BASE_CANDLE_COLUMNS):
-        return BASE_CANDLE_COLUMNS[:length]
-    extra = [f"value_{idx}" for idx in range(length - len(BASE_CANDLE_COLUMNS))]
-    return BASE_CANDLE_COLUMNS + extra
 
 
 def load_local_klines(
@@ -123,139 +103,6 @@ def save_local_klines(
     upsert_klines(filepath, df)
 
 
-def run_ccxt_updater(
-    db_root_path: str,
-    exchange_list: list,
-    symbol_list: list,
-    kline_type_list: list,
-    interval_list: list,
-):
-    """
-    Use the CCXT framework to concurrently update K-line data of multiple exchanges and currencies.
-    
-    parameter:
-        db_root_path (str): Database storage root path.
-        exchange_list (list): List of exchange IDs (e.g. ['binance', 'okx'])。
-        symbol_list (list): List of trading pairs.
-        kline_type_list (list): KLine type (e.g. ['swap', 'spot'])。
-        interval_list (list): List of time intervals.
-    """
-    console = Console()
-    
-    # Print summary table
-    table = Table(title="📊 CCXT Incremental update task configuration")
-    table.add_column("parameter", style="cyan")
-    table.add_column("value", style="green")
-    table.add_row("Exchange list", ", ".join(exchange_list))
-    table.add_row("trading pair", ", ".join(symbol_list))
-    table.add_row("KLine type", ", ".join(kline_type_list) if kline_type_list else "default")
-    table.add_row("time interval", ", ".join(interval_list))
-    console.print(table)
-    console.print()
-
-    # Calculate total tasks
-    total_tasks = 0
-    for exchange in exchange_list:
-        profile = resolve_exchange_profile(exchange)
-        candidate_types = kline_type_list or [profile.default_type]
-        total_tasks += len(candidate_types) * len(symbol_list) * len(interval_list)
-
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        console=console
-    ) as progress:
-        task_progress = progress.add_task("[cyan]Handle CCXT tasks", total=total_tasks)
-
-        for exchange in exchange_list:
-            profile = resolve_exchange_profile(exchange)
-            candidate_types = kline_type_list or [profile.default_type]
-
-            for raw_type in candidate_types:
-                target_type = (raw_type or profile.default_type).lower()
-                if target_type not in profile.kline_types:
-                    progress.console.print(f"[yellow]⚠️  Skip unsupported kline_type'{target_type}' (Exchange:{exchange})[/yellow]")
-                    progress.update(task_progress, advance=len(symbol_list) * len(interval_list))
-                    continue
-
-                for symbol in symbol_list:
-                    for interval in interval_list:
-                        interval_norm = interval.strip().lower()
-                        try:
-                            interval_ms = timeframe_to_milliseconds(interval_norm)
-                        except ValueError as exc:
-                            progress.console.print(f"[red]❌ Skip invalid intervals'{interval}' ({symbol}): {exc}[/red]")
-                            progress.update(task_progress, advance=1)
-                            continue
-
-                        existing_df = load_local_klines(
-                            db_root_path,
-                            exchange,
-                            symbol,
-                            target_type,
-                            interval,
-                        )
-
-                        if not existing_df.empty and "timestamp" in existing_df.columns:
-                            last_timestamp = existing_df["timestamp"].max()
-                            start_ms = int(last_timestamp) if pd.notna(last_timestamp) else DEFAULT_START_MS
-                        else:
-                            start_ms = DEFAULT_START_MS
-
-                        now_ms = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
-                        end_ms = now_ms - (now_ms % interval_ms)
-                        
-                        if end_ms <= start_ms:
-                            # progress.console.print(f"[blue]ℹ️  {exchange} {symbol} {interval}: Already the latest[/blue]")
-                            progress.update(task_progress, advance=1)
-                            continue
-
-                        try:
-                            candles = ccxt_fetch_klines(
-                                exchange=exchange,
-                                symbol=symbol,
-                                interval=interval,
-                                start_time=start_ms,
-                                end_time=end_ms,
-                                batch_size=1000,
-                                progress=False,
-                                kline_type=target_type,
-                            )
-                        except Exception as exc:
-                            log_error(db_root_path, exchange, symbol, target_type, interval, str(exc))
-                            progress.console.print(
-                                f"[red]❌ Failed to obtain{exchange} {symbol} {interval} ({target_type}): {exc}[/red]"
-                            )
-                            progress.update(task_progress, advance=1)
-                            continue
-
-                        if not candles:
-                            # progress.console.print(f"[yellow]⚠️  {exchange} {symbol} {interval}: No data returned[/yellow]")
-                            progress.update(task_progress, advance=1)
-                            continue
-
-                        columns = _build_candle_columns(len(candles[0]))
-                        new_df = pd.DataFrame(candles, columns=columns)
-                        new_df["created_at"] = pd.Timestamp.utcnow()
-
-                        save_local_klines(
-                            db_root_path,
-                            exchange,
-                            symbol,
-                            target_type,
-                            interval,
-                            new_df,
-                        )
-                        progress.console.print(
-                            f"[green]✓ saved{len(new_df)} OK:{exchange} {symbol} {interval} ({target_type})[/green]"
-                        )
-                        progress.update(task_progress, advance=1)
-    
-    console.print("\n[bold green]✅ CCXT Update task completed![/bold green]")
-
-
 def run_binance_rest_updater(
     db_root_path: str,
     exchange: str,
@@ -269,7 +116,7 @@ def run_binance_rest_updater(
     proxy:dict = None
 ):
     """
-    Use Binance REST API for incremental K-line updates. Suitable for scenarios where CCXT does not support or requires native API performance.
+    Use Binance REST API for incremental K-line updates.
     
     parameter:
         db_root_path (str): Database storage root path.

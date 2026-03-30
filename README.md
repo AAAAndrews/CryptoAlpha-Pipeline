@@ -1,4 +1,4 @@
-# CryptoTradingSystem_allin1
+﻿# CryptoTradingSystem_allin1
 
 Integrated cryptocurrency research and data-engineering workspace for factor research, market-data ingestion, and storage maintenance.
 
@@ -79,7 +79,6 @@ Typical usage:
 ### 3. CryptoDataProviders
 
 Purpose:
-- Provide a unified market-data acquisition interface across Binance REST, Binance bulk archives, and CCXT sources.
 
 Core responsibilities:
 - Normalize access patterns for multiple data sources
@@ -90,7 +89,6 @@ Core responsibilities:
 Key files and folders:
 - `CryptoDataProviders/providers/binance_api/`: REST endpoint adapters
 - `CryptoDataProviders/providers/binance_bulk/`: S3 bulk historical downloader
-- `CryptoDataProviders/providers/ccxt_api/`: multi-exchange CCXT fetchers
 - `CryptoDataProviders/utils/trading_pairs.py`: trading-pair discovery helpers
 - `CryptoDataProviders/config.py`: global provider configuration
 
@@ -110,7 +108,6 @@ Core responsibilities:
 
 Key files:
 - `CryptoDB_feather/core/storage.py`: path resolution and file IO primitives
-- `CryptoDB_feather/core/db_manager.py`: REST/CCXT incremental update orchestration
 - `CryptoDB_feather/core/bulk_manager.py`: bulk download orchestration
 - `CryptoDB_feather/core/reader.py`: query/read interface for stored data
 - `CryptoDB_feather/config.py`: DB root path and runtime configuration

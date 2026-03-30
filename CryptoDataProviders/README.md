@@ -1,15 +1,14 @@
-# CryptoDataProviders
+﻿# CryptoDataProviders
 
 **Cryptocurrency data source unified interface library**
 
 CryptoDataProviders It is a Python library focused on cryptocurrency market data acquisition, providing unified interface access to multiple exchanges. Supports real-time data capture and batch download of historical data.
 
-## 📋 characteristic
+## 馃搵 characteristic
 
 - **Multiple data sources support**
   - Binance REST API (Spot, perpetual contract, mark price, index price)
   - Binance Bulk Download (Historical data batch download)
-  - CCXT Unified interface for multiple exchanges
   
 - **Flexible data acquisition**
   - Supports multiple time granularities (1m, 5m, 15m, 1h, 4h, 1d, etc.)
@@ -23,13 +22,13 @@ CryptoDataProviders It is a Python library focused on cryptocurrency market data
   - Detailed error log
   - Agent support
 
-## 📦 Install
+## 馃摝 Install
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 🚀 quick start
+## 馃殌 quick start
 
 ### 1. Binance REST API Get data
 
@@ -66,14 +65,10 @@ df = pd.concat(data_frames, ignore_index=True)
 print(df.head())
 ```
 
-### 2. CCXT Multiple exchange support
 
 ```python
-from providers.ccxt_api.fetcher import CCXTKlineFetcher
 from datetime import datetime, timezone
 
-# Initialize CCXT grabber
-fetcher = CCXTKlineFetcher(
     exchange="binance",
     kline_type="swap",
     proxies=proxy
@@ -146,7 +141,7 @@ print(f"turn up{len(trading_pairs)} trading pairs")
 print(trading_pairs[:10])  # Show top 10
 ```
 
-## 📚 API document
+## 馃摎 API document
 
 ### Binance REST API
 
@@ -184,17 +179,13 @@ Get candlestick data from Binance REST API.
 - `taker_buy_volume`: Active buying volume (float)
 - `taker_buy_quote_volume`: Active buying transaction volume (float)
 
-### CCXT API
 
-#### `CCXTKlineFetcher`
 
-Multi-exchange data capture class based on CCXT.
 
 **Initialization parameters: **
 - `exchange` (str): Exchange name, such as"binance", "okx", "bybit"
 - `kline_type` (str|None): KLine type, defaults to the exchange default type
 - `proxies` (dict|str|None): Agent configuration
-- `**client_kwargs`: Additional parameters passed to CCXT client
 
 **method:**
 - `fetch_klines(...)`: Get K-line data
@@ -219,7 +210,7 @@ Batch download historical data from Binance S3 bucket.
 - `fetch_range(...)`: Download data for a specified time range
 - `fetch_single(...)`: Download a single file
 
-## 🔧 Configuration
+## 馃敡 Configuration
 
 exist`config.py` Modify the global configuration in:
 
@@ -237,58 +228,56 @@ DEFAULT_BATCH_SIZE = 1000
 REQUEST_TIMEOUT = 30
 ```
 
-## 📁 Project structure
+## 馃搧 Project structure
 
 ```
 CryptoDataProviders/
-├── config.py                 # Global configuration
-├── requirements.txt          # Dependency package
-├── README.md                 # Project documentation
-├── __init__.py              # Package initialization
-├── providers/               # data source provider
-│   ├── binance_api/         # Binance REST API
-│   │   ├── market_api.py    # KLine data acquisition
-│   │   ├── cons.py          # constant definition
-│   │   └── utils.py         # Utility function
-│   ├── binance_bulk/        # Binance Batch download
-│   │   ├── bulk_fetcher.py  # Batch data acquisition
-│   │   ├── downloader.py    # Downloader
-│   │   └── exceptions.py    # Exception definition
-│   └── ccxt_api/            # CCXT Multiple exchanges
-│       ├── fetcher.py       # data scraper
-│       ├── config.py        # Configuration
-│       └── utils.py         # Utility function
-├── utils/                   # general tools
-│   ├── common.py            # General functions (time analysis, progress tracking, etc.)
-│   └── trading_pairs.py     # Get trading pair
-└── examples/                # Usage example
-    ├── example_binance_api.py
-    ├── example_ccxt.py
-    └── example_bulk_download.py
+鈹溾攢鈹€ config.py                 # Global configuration
+鈹溾攢鈹€ requirements.txt          # Dependency package
+鈹溾攢鈹€ README.md                 # Project documentation
+鈹溾攢鈹€ __init__.py              # Package initialization
+鈹溾攢鈹€ providers/               # data source provider
+鈹?  鈹溾攢鈹€ binance_api/         # Binance REST API
+鈹?  鈹?  鈹溾攢鈹€ market_api.py    # KLine data acquisition
+鈹?  鈹?  鈹溾攢鈹€ cons.py          # constant definition
+鈹?  鈹?  鈹斺攢鈹€ utils.py         # Utility function
+鈹?  鈹溾攢鈹€ binance_bulk/        # Binance Batch download
+鈹?  鈹?  鈹溾攢鈹€ bulk_fetcher.py  # Batch data acquisition
+鈹?  鈹?  鈹溾攢鈹€ downloader.py    # Downloader
+鈹?  鈹?  鈹斺攢鈹€ exceptions.py    # Exception definition
+鈹?      鈹溾攢鈹€ fetcher.py       # data scraper
+鈹?      鈹溾攢鈹€ config.py        # Configuration
+鈹?      鈹斺攢鈹€ utils.py         # Utility function
+鈹溾攢鈹€ utils/                   # general tools
+鈹?  鈹溾攢鈹€ common.py            # General functions (time analysis, progress tracking, etc.)
+鈹?  鈹斺攢鈹€ trading_pairs.py     # Get trading pair
+鈹斺攢鈹€ examples/                # Usage example
+    鈹溾攢鈹€ example_binance_api.py
+    鈹斺攢鈹€ example_bulk_download.py
 ```
 
-## 🎯 Usage scenarios
+## 馃幆 Usage scenarios
 
 1. **Quantitative strategy backtesting**: Quickly obtain historical data for strategy backtesting
 2. **Data Analysis**: Obtain multi-trading pair data for market analysis
 3. **Real-time monitoring**: regularly capture the latest data for monitoring
 4. **Database construction**: Download historical data in batches to establish a local database
 
-## ⚠️ Things to note
+## 鈿狅笍 Things to note
 
-1. **APIRestrictions**: Comply with the exchange’s API call frequency limits
+1. **APIRestrictions**: Comply with the exchange鈥檚 API call frequency limits
 2. **Proxy configuration**: If you cannot access the exchange directly, you need to configure a proxy
 3. **Error handling**: All errors will be logged to`errors/errors.json`
 4. **Memory management**: Use generator mode to avoid loading large amounts of data at once
 
-## 🤝 contribute
+## 馃 contribute
 
 Issues and Pull Requests are welcome!
 
-## 📄 license
+## 馃搫 license
 
 MIT License
 
-## 📮 Contact information
+## 馃摦 Contact information
 
 If you have questions or suggestions, please contact us via Issues.

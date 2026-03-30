@@ -18,10 +18,6 @@ def test_imports():
         from providers.binance_api.market_api import fetch_klines
         print("✓ providers.binance_api Import successful")
         
-        # Test ccxt_api
-        from providers.ccxt_api.fetcher import CCXTKlineFetcher
-        print("✓ providers.ccxt_api Import successful")
-        
         # Test binance_bulk
         from providers.binance_bulk.bulk_fetcher import BinanceBulkFetcher
         print("✓ providers.binance_bulk Import successful")
@@ -57,7 +53,6 @@ def test_dependencies():
         "pandas",
         "pyarrow",
         "requests",
-        "ccxt",
         "tqdm",
         "rich",
         "numpy"
@@ -110,38 +105,6 @@ def test_basic_functionality():
         return False
 
 
-def test_ccxt_exchange_init():
-    """Test CCXT exchange initialization"""
-    print("\n" + "=" * 50)
-    print("Test 4: Test CCXT exchange initialization")
-    print("=" * 50)
-    
-    try:
-        from providers.ccxt_api.fetcher import CCXTKlineFetcher
-        
-        # Try initializing Binance spot (easiest configuration)
-        fetcher = CCXTKlineFetcher(
-            exchange="binance",
-            kline_type="spot"  # Use spot market
-        )
-        print(f"✓ Binance Spot exchange initialization successful")
-        
-        # Check if the client is created correctly
-        if hasattr(fetcher, 'client'):
-            exchange_id = fetcher.client.id
-            print(f"✓ Exchange ID:{exchange_id}")
-            print(f"✓ Client type:{type(fetcher.client).__name__}")
-        
-        print("\nCCXT The exchange initialization test passed!")
-        return True
-        
-    except Exception as e:
-        print(f"\n✗ CCXT Exchange initialization failed:{e}")
-        print("NOTE: This may be normal as some exchange configurations may need to be adjusted")
-        # Does not print the complete stack, only displays the error message
-        return False
-
-
 def main():
     """Run all tests"""
     print("\n" + "=" * 60)
@@ -154,7 +117,6 @@ def main():
     results.append(("module import", test_imports()))
     results.append(("Dependency package check", test_dependencies()))
     results.append(("Basic functions", test_basic_functionality()))
-    results.append(("CCXTinitialization", test_ccxt_exchange_init()))
     
     # Output test results
     print("\n" + "=" * 60)

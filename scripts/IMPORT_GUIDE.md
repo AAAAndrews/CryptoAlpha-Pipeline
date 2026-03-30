@@ -1,17 +1,16 @@
-# Scripts Import specifications
+﻿# Scripts Import specifications
 
-## 📋 Import schema
+## 馃搵 Import schema
 
 The refactored script adopts a clear hierarchical import architecture:
 
 ```
 scripts/
-  ↓
-  ├─→ CryptoDataProviders (data source interface)
-  └─→ CryptoDB_feather (Storage layer and configuration)
+  鈫?  鈹溾攢鈫?CryptoDataProviders (data source interface)
+  鈹斺攢鈫?CryptoDB_feather (Storage layer and configuration)
 ```
 
-## 🎯 Import specification
+## 馃幆 Import specification
 
 ### Standard import format
 
@@ -42,15 +41,15 @@ from CryptoDB_feather.core.db_manager import run_binance_rest_updater
 from CryptoDB_feather.config import PROXY, DEFAULT_BINANCE_PARAMS
 ```
 
-## 📦 Module import instructions
+## 馃摝 Module import instructions
 
-### CryptoDataProviders（data source)
+### CryptoDataProviders锛坉ata source)
 
 ```python
-# ✅ Recommended: Use the full module path
+# 鉁?Recommended: Use the full module path
 from CryptoDataProviders.utils.trading_pairs import get_trading_pairs
 
-# ❌ Avoid: Use relative paths
+# 鉂?Avoid: Use relative paths
 from utils.trading_pairs import get_trading_pairs
 ```
 
@@ -58,18 +57,17 @@ from utils.trading_pairs import get_trading_pairs
 - `CryptoDataProviders.utils.trading_pairs` - Get trading pair
 - `CryptoDataProviders.utils.common` - general tools
 - `CryptoDataProviders.providers.binance_api` - Binance API
-- `CryptoDataProviders.providers.ccxt_api` - CCXT interface
 - `CryptoDataProviders.providers.binance_bulk` - Batch download
 
-### CryptoDB_feather（storage layer)
+### CryptoDB_feather锛坰torage layer)
 
 ```python
-# ✅ Recommended: Use the full module path
+# 鉁?Recommended: Use the full module path
 from CryptoDB_feather.core.db_manager import run_binance_rest_updater
 from CryptoDB_feather.core.bulk_manager import run_bulk_updater
 from CryptoDB_feather.config import PROXY, DB_ROOT_PATH
 
-# ❌ Avoid: Use relative paths
+# 鉂?Avoid: Use relative paths
 from core.db_manager import run_binance_rest_updater
 from config import PROXY
 ```
@@ -81,7 +79,7 @@ from config import PROXY
 - `CryptoDB_feather.core.storage` - Feather storage
 - `CryptoDB_feather.config` - Global configuration
 
-## 🔍 Why do I need to add submodule paths?
+## 馃攳 Why do I need to add submodule paths?
 
 because`CryptoDataProviders` and`CryptoDB_feather` Relative imports are used internally:
 
@@ -93,9 +91,9 @@ from utils.common import parse_time  # relative import
 from providers.binance_api import fetch_klines  # relative import
 ```
 
-Therefore these two submodules need to be added to`sys.path`，Enables Python to correctly resolve these internal relative imports.
+Therefore these two submodules need to be added to`sys.path`锛孍nables Python to correctly resolve these internal relative imports.
 
-## ✨ Advantages of refactoring
+## 鉁?Advantages of refactoring
 
 ### 1. Clear module boundaries
 ```python
@@ -121,7 +119,7 @@ from CryptoDB_feather.config import PROXY
 - It is more convenient to jump to the definition
 - Better refactoring tool support
 
-## 📚 Practical application examples
+## 馃摎 Practical application examples
 
 ### update_api.py
 ```python
@@ -148,7 +146,7 @@ active_symbols = get_trading_pairs(exchange="binance", proxy=PROXY)
 # Access database files: os.path.join(DB_ROOT_PATH, ...)
 ```
 
-## 🔧 Troubleshooting
+## 馃敡 Troubleshooting
 
 ### ModuleNotFoundError
 
@@ -181,14 +179,14 @@ for submodule in ["CryptoDataProviders", "CryptoDB_feather"]:
         sys.path.insert(0, submodule_path)
 ```
 
-## 📝 best practices
+## 馃摑 best practices
 
 1. **Always use full module path**
    ```python
-   # ✅ Good
+   # 鉁?Good
    from CryptoDataProviders.utils.trading_pairs import get_trading_pairs
    
-   # ❌ Bad
+   # 鉂?Bad
    from utils.trading_pairs import get_trading_pairs
    ```
 
@@ -212,15 +210,15 @@ for submodule in ["CryptoDataProviders", "CryptoDB_feather"]:
    from CryptoDB_feather.core.db_manager import run_binance_rest_updater as run_api_update
    ```
 
-## 🎯 Summarize
+## 馃幆 Summarize
 
 The refactored import architecture has the following features:
 
-- ✅ **Clarity**: You can see where the functionality comes from at a glance
-- ✅ **Specification**: unified import format
-- ✅ **Maintainable**: easy to understand and modify
-- ✅ **Testable**: supports unit testing
-- ✅ **IDEFriendly**: autocomplete and jump
+- 鉁?**Clarity**: You can see where the functionality comes from at a glance
+- 鉁?**Specification**: unified import format
+- 鉁?**Maintainable**: easy to understand and modify
+- 鉁?**Testable**: supports unit testing
+- 鉁?**IDEFriendly**: autocomplete and jump
 
 ---
 

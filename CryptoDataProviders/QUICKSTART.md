@@ -1,4 +1,4 @@
-# CryptoDataProviders Quick start guide
+﻿# CryptoDataProviders Quick start guide
 
 ## Installation steps
 
@@ -85,15 +85,12 @@ print(f"Downloaded{len(df)} piece of data")
 
 ### Scenario 3: Multi-exchange data acquisition
 
-Support multiple exchanges using **CCXT**:
 
 ```python
-from providers.ccxt_api.fetcher import CCXTKlineFetcher
 from datetime import datetime, timezone
 import pandas as pd
 
 # Initialize OKX grabber
-fetcher = CCXTKlineFetcher(
     exchange="okx",  # can be"binance", "okx", "bybit" wait
     kline_type="swap"
 )
@@ -161,8 +158,6 @@ The project provides a complete sample script:
 # Example 1: Binance REST API
 python examples/example_binance_api.py
 
-# Example 2: CCXT multi-exchange
-python examples/example_ccxt.py
 
 # Example 3: Batch download
 python examples/example_bulk_download.py
