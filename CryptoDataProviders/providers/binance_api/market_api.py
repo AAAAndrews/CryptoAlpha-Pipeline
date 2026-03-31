@@ -2,10 +2,12 @@
 from .cons import *
 from datetime import datetime, timedelta
 import requests
+import requests.exceptions
 import pandas as pd
 from tqdm import tqdm
 from .utils import _format_data
 from utils.common import parse_time, log_error_to_json
+from utils.retry import retry_with_backoff
 import time
 import json
 import os
@@ -21,6 +23,55 @@ def log_error(symbol: str, interval: str, kline_type: str, error_msg: str):
         "error_message": str(error_msg)
     }
     log_error_to_json(error_dir, error_entry)
+
+
+@retry_with_backoff(
+    max_retries=2,
+    base_delay=5.0,
+    max_delay=30.0,
+    exponential_base=5.0,
+    jitter=True,
+    retryable_exceptions=(requests.exceptions.RequestException,),
+)
+def _request_kline_batch(klines_url, params, headers, proxy):
+    """
+    发送单次K线数据HTTP请求 / Send a single HTTP request for kline data.
+
+    由 retry_with_backoff 装饰器提供自动重试，遇到网络异常或特定状态码时自动退避重试。
+    Automatic retry is provided by the retry_with_backoff decorator — backs off on
+    network errors or specific HTTP status codes.
+
+    参数 / Parameters:
+        klines_url: K线API端点 / Kline API endpoint URL.
+        params: 请求参数字典 / Request parameters dict.
+        headers: 请求头 / Request headers.
+        proxy: 代理配置 / Proxy configuration dict.
+
+    返回 / Returns:
+        list: 原始K线数据列表 / Raw kline data list from API.
+    """
+    # 服务端时间校验 / Server time verification
+    time_res = requests.get(
+        "https://api.binance.com/api/v3/time",
+        headers=headers, timeout=10, proxies=proxy,
+    )
+    server_time = time_res.json()['serverTime']
+
+    # 请求K线数据 / Request kline data
+    response = requests.get(
+        klines_url, params=params, headers=headers,
+        timeout=30, proxies=proxy,
+    )
+
+    # 特定状态码检查：触发重试 / Specific status codes that trigger retry
+    if response.status_code == 502:
+        raise requests.exceptions.HTTPError("502 Bad Gateway")
+    if response.status_code == 429:
+        raise requests.exceptions.HTTPError("429 Too Many Requests - rate limited")
+
+    response.raise_for_status()
+    return response.json()
+
 
 def fetch_klines(symbol, interval, start_time=None, end_time=None, limit=None, progress=True, batch_size=1000, kline_type="index",proxy:dict=None):
     """
@@ -95,52 +146,11 @@ def fetch_klines(symbol, interval, start_time=None, end_time=None, limit=None, p
                 params['startTime'] = start_ms
             params['endTime'] = end_ms
 
-            # Retry mechanism: retry up to 2 times
-            max_retries = 2
-            retry_count = 0
-            data = None
-            
-            while retry_count <= max_retries:
-                try:
-                    time_res = requests.get("https://api.binance.com/api/v3/time", headers=headers, timeout=10, proxies=proxy)
-                    # print(f"Server time request status code:{time_res.status_code}")
-                    # print(time_res)
-                    server_time = time_res.json()['serverTime']  # millisecond timestamp
-                    response = requests.get(
-                        klines_url, 
-                        params=params, 
-                        headers=headers, 
-                        timeout=30, 
-                        proxies=proxy
-                    )
-                    
-                    # Check if retry is needed
-                    if response.status_code == 502:
-                        raise requests.exceptions.HTTPError(f"502 Bad Gateway (try{retry_count + 1}/{max_retries + 1})")
-                    elif response.status_code == 429:
-                        raise requests.exceptions.HTTPError(f"429 Too Many Requests - Trigger flow control (try{retry_count + 1}/{max_retries + 1})")
-                    
-                    response.raise_for_status()
-                    data = response.json()
-                    break  # Successfully obtain data and jump out of the retry loop
-                    
-                except (requests.exceptions.HTTPError, requests.exceptions.RequestException) as e:
-                    retry_count += 1
-                    if retry_count > max_retries:
-                        log_error(symbol, interval, kline_type, f"The request failed, the maximum number of retries has been reached:{str(e)}")
-                        print(f"The request failed, the maximum number of retries has been reached:{str(e)}")
-                        break
-                    else:
-                        wait_time = 5 ** retry_count  # Exponential backoff: 5s, 25s
-                        print(f"Request failed:{str(e)}，wait{wait_time}s Try again later...")
-                        time.sleep(wait_time)
-                except Exception as e:
-                    log_error(symbol, interval, kline_type, f"Request failed:{str(e)}")
-                    print(f"Request failed:{str(e)}")
-                    break
-            
-            # If it still fails after retrying, exit the main loop
-            if data is None:
+            # 使用带重试装饰器的请求函数 / Use decorated request function with retry
+            try:
+                data = _request_kline_batch(klines_url, params, headers, proxy)
+            except requests.exceptions.RequestException as e:
+                log_error(symbol, interval, kline_type, f"请求失败，已达最大重试次数: {str(e)}")
                 break
 
             if not data:
