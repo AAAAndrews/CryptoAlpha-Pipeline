@@ -5,6 +5,33 @@
 
 ---
 
+### [2026-03-31] Task 14 — 因子注册表 / Factor Registry
+
+Created `FactorLib/registry.py` with a global factor registry:
+
+- `register(factor_cls)` — register a BaseFactor subclass by class name; warns on duplicate
+- `list_factors()` — returns sorted list of registered factor names
+- `get(name)` — retrieve a registered factor class by name, returns None if not found
+- `clear()` — empty the registry (useful for testing)
+- `TypeError` raised when registering non-BaseFactor classes
+- Updated `FactorLib/__init__.py` to export all 4 registry functions
+
+**Verification**: 9 checks passed — import, single register, multiple register + sorted list, get by name, get missing → None, duplicate warning, non-BaseFactor TypeError, clear, public exports.
+
+**Usage**:
+```python
+from FactorLib import register, list_factors, get
+
+register(AlphaMomentum)
+register(AlphaVolatility)
+print(list_factors())  # ['AlphaMomentum', 'AlphaVolatility']
+
+cls = get('AlphaMomentum')
+factor = cls(lookback=10)
+```
+
+---
+
 ### [2026-03-31] Task 13 — Alpha2 波动率因子 / Alpha2 Volatility Factor
 
 Created `FactorLib/alpha_volatility.py` with `AlphaVolatility(BaseFactor)` class:

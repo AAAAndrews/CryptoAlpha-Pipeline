@@ -96,7 +96,7 @@
   {
     "id": 14,
     "task": "创建 FactorLib/registry.py：因子注册表，用于注册和列出可用的因子",
-    "passes": false,
+    "passes": true,
     "deps": [
       11
     ]

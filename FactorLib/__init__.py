@@ -8,5 +8,14 @@ For manually defined factors, decoupled from deap_alpha (GP auto-discovery).
 from FactorLib.alpha_momentum import AlphaMomentum
 from FactorLib.alpha_volatility import AlphaVolatility
 from FactorLib.base import BaseFactor
+from FactorLib.registry import clear, get, list_factors, register
 
-__all__ = ["BaseFactor", "AlphaMomentum", "AlphaVolatility"]
+__all__ = [
+    "BaseFactor",
+    "AlphaMomentum",
+    "AlphaVolatility",
+    "register",
+    "list_factors",
+    "get",
+    "clear",
+]
