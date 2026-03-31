@@ -46,7 +46,7 @@
   {
     "id": 7,
     "task": "创建统一管道脚本 scripts/pipeline.py：按顺序执行 update_bulk 然后 cleanup",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
