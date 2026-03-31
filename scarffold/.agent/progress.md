@@ -5,6 +5,21 @@
 
 ---
 
+### [2026-03-31] Task 10 — 短期数据加载器验证测试 / Short-Term Loader Validation Tests
+
+Created `scarffold/.agent/test_short_term_loader.py` with 4 validation tests:
+
+1. **Import and Inheritance** — ShortTermDataLoader imports and correctly inherits BaseDataLoader; required methods (receive, compile, dataset) exist
+2. **Data Shape** — Required columns (timestamp, symbol, open, high, low, close) present; OHLC columns are numeric; loaded 80 symbols, 320 rows (lookback=1d)
+3. **No Missing Data** — Zero NaN in all critical columns; no duplicate (timestamp, symbol) pairs; all rows satisfy high >= low
+4. **Compile Validation** — Missing columns raises ValueError with descriptive message; dataset property auto-triggers receive() → compile() chain
+
+All 4 tests PASSED.
+
+**Usage**: `python scarffold/.agent/test_short_term_loader.py`
+
+---
+
 ### [2026-03-31] Task 9 — 短期数据加载器 / Short-Term Data Loader
 
 Created `Cross_Section_Factor/short_term_loader.py` with `ShortTermDataLoader` class:
