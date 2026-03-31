@@ -1,7 +1,7 @@
 # utils.py
 import pandas as pd
 from datetime import datetime
-from utils.common import parse_time
+from CryptoDataProviders.utils.common import parse_time
 
 def _format_data(raw_data, timeformat=False):
     """

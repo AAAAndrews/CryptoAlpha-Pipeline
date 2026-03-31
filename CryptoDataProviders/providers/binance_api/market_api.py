@@ -6,8 +6,8 @@ import requests.exceptions
 import pandas as pd
 from tqdm import tqdm
 from .utils import _format_data
-from utils.common import parse_time, log_error_to_json
-from utils.retry import retry_with_backoff
+from CryptoDataProviders.utils.common import parse_time, log_error_to_json
+from CryptoDataProviders.utils.retry import retry_with_backoff
 import time
 import json
 import os

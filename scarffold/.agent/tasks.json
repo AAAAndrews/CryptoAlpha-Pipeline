@@ -60,7 +60,7 @@
   {
     "id": 9,
     "task": "创建短期数据加载器：使用 CryptoDB_feather 读取器加载所有交易对在短期时间窗口内的数据",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
