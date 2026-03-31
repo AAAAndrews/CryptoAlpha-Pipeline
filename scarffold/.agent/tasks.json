@@ -198,7 +198,7 @@
   {
     "id": 26,
     "task": "FactorAnalysis 端到端验证测试：使用合成数据验证 FactorEvaluator 全流程——IC/RankIC/ICIR 数值合理性、分组收益单调性、净值曲线无 NaN、交易成本扣除后收益下降、report 输出 DataFrame 包含所有关键列",
-    "passes": false,
+    "passes": true,
     "deps": [
       25
     ]

@@ -3,6 +3,30 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 26 — FactorAnalysis 端到端验证测试 / E2E Validation Tests
+
+Created `scarffold/.agent/test_factoranalysis_e2e.py` with 94 validation checks across 13 areas:
+
+1. **合成数据生成** — factor/returns MultiIndex (timestamp, symbol) 类型、形状、有限值
+2. **FactorEvaluator 默认运行** — run() 返回 self、ic/rank_ic/icir 类型
+3. **IC/RankIC/ICIR 数值合理性** — 正 IC 强度因子 IC > 0、IC < 0.5、ICIR > 0、IC ∈ [-1,1]
+4. **分组标签** — 类型、MultiIndex、唯一值范围 0-4、无 NaN
+5. **分组收益单调性** — 因子值越高收益越高，单调比例 = 1.00
+6. **净值曲线** — long/short/hedge 曲线：类型、DatetimeIndex、起始 1.0、无 NaN、有限值
+7. **交易成本扣除** — after_cost 类型、起始 1.0、无 NaN、after_cost 收益 <= 原始收益
+8. **绩效比率** — 6 个比率（sharpe/calmar/sortino × before/after cost）类型和有限值、after <= before
+9. **generate_report** — DataFrame 类型、单行、16 列全部存在、所有值有限
+10. **自定义参数** — n_groups=3、cost_rate=0.005 正常运行、更高成本 → 更低收益
+11. **错误处理** — 未调用 run() 时 generate_report 抛出 ValueError
+12. **弱因子场景** — 独立噪声因子 ICIR ≈ 0、report 正常输出
+13. **公共导出** — `__all__` 有 13 个导出
+
+All 94 checks PASSED.
+
+**Usage**: `python scarffold/.agent/test_factoranalysis_e2e.py`
+
+---
+
 ### [2026-04-01] Task 25 — FactorAnalysis/report.py 绩效报告汇总 / Summary Report Generator
 
 Implemented `generate_report(evaluator)` in `FactorAnalysis/report.py`:
