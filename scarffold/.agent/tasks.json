@@ -37,87 +37,89 @@
   },
   {
     "id": 6,
+    "task": "数据管道端到端验证测试：验证 retry 装饰器导入与行为、活跃交易对校验返回正确类型与子集关系、update_api.py 完整导入链畅通、db_manager 重试包装正确",
+    "passes": true,
+    "deps": [
+      5
+    ]
+  },
+  {
+    "id": 7,
     "task": "创建统一管道脚本 scripts/pipeline.py：按顺序执行 update_bulk 然后 cleanup",
     "passes": false,
     "deps": []
   },
   {
-    "id": 7,
+    "id": 8,
     "task": "为 scripts/pipeline.py 添加管道摘要日志：统计更新的交易对数量、清理的交易对数量、错误数量",
     "passes": false,
     "deps": [
-      6
+      7
     ]
   },
   {
-    "id": 8,
+    "id": 9,
     "task": "创建短期数据加载器：使用 CryptoDB_feather 读取器加载所有交易对在短期时间窗口内的数据",
     "passes": false,
     "deps": []
   },
   {
-    "id": 9,
+    "id": 10,
     "task": "编写短期数据加载器的验证测试：验证正确的数据形状和没有缺失数据",
     "passes": false,
     "deps": [
-      8
+      9
     ]
   },
   {
-    "id": 10,
+    "id": 11,
     "task": "创建 FactorLib/base.py：BaseFactor 抽象基类，带有抽象的 calculate(data) 方法和文档字符串约定",
     "passes": false,
     "deps": []
   },
   {
-    "id": 11,
+    "id": 12,
     "task": "在 FactorLib/alpha_momentum.py 中实现 Alpha1 动量因子，继承 BaseFactor",
     "passes": false,
     "deps": [
-      10
-    ]
-  },
-  {
-    "id": 12,
-    "task": "在 FactorLib/alpha_volatility.py 中实现 Alpha2 波动率因子，继承 BaseFactor",
-    "passes": false,
-    "deps": [
-      10
+      11
     ]
   },
   {
     "id": 13,
-    "task": "创建 FactorLib/registry.py：因子注册表，用于注册和列出可用的因子",
+    "task": "在 FactorLib/alpha_volatility.py 中实现 Alpha2 波动率因子，继承 BaseFactor",
     "passes": false,
     "deps": [
-      10
+      11
     ]
   },
   {
     "id": 14,
-    "task": "创建 FactorAnalysis 模块结构：__init__.py 包含公共 API 导出",
+    "task": "创建 FactorLib/registry.py：因子注册表，用于注册和列出可用的因子",
     "passes": false,
-    "deps": []
+    "deps": [
+      11
+    ]
   },
   {
     "id": 15,
-    "task": "实现 FactorAnalysis/metrics.py：使用 pandas 实现 IC、RankIC、ICIR（重构自 deap_alpha 的 numpy 版本）",
+    "task": "FactorLib 集成验证测试：验证 BaseFactor 抽象类不可实例化、Alpha1/Alpha2 正确继承并产出预期形状的 Series、registry 注册/列出/获取因子功能正常、__init__.py 公共导出完整",
     "passes": false,
     "deps": [
+      12,
+      13,
       14
     ]
   },
   {
     "id": 16,
-    "task": "实现 FactorAnalysis/grouping.py：分位数分组分割，可调节分组数量",
+    "task": "创建 FactorAnalysis 模块结构：__init__.py 包含公共 API 导出",
     "passes": false,
-    "deps": [
-      14
-    ]
+    "deps": []
   },
   {
     "id": 17,
-    "task": "实现 FactorAnalysis/portfolio.py：仅多组净值曲线计算",
+    "task": "实现 FactorAnalysis/metrics.py：使用 pandas 实现 IC、RankIC、ICIR（重构自 deap_alpha 的 numpy 版本）",
     "passes": false,
     "deps": [
       16
@@ -125,7 +127,7 @@
   },
   {
     "id": 18,
-    "task": "实现 FactorAnalysis/portfolio.py：仅空组净值曲线计算",
+    "task": "实现 FactorAnalysis/grouping.py：分位数分组分割，可调节分组数量",
     "passes": false,
     "deps": [
       16
@@ -133,54 +135,86 @@
   },
   {
     "id": 19,
-    "task": "实现 FactorAnalysis/portfolio.py：top-N 多头减去 bottom-N 空头组合净值",
+    "task": "实现 FactorAnalysis/portfolio.py：仅多组净值曲线计算",
     "passes": false,
     "deps": [
-      16
+      18
     ]
   },
   {
     "id": 20,
-    "task": "实现 FactorAnalysis/cost.py：按比例滑差的交易成本向量化扣除",
+    "task": "实现 FactorAnalysis/portfolio.py：仅空组净值曲线计算",
     "passes": false,
     "deps": [
-      16
+      18
     ]
   },
   {
     "id": 21,
-    "task": "在 FactorAnalysis/metrics.py 中实现 Sharpe/Calmar/Sortino 比率计算",
+    "task": "实现 FactorAnalysis/portfolio.py：top-N 多头减去 bottom-N 空头组合净值",
     "passes": false,
     "deps": [
-      15
+      18
     ]
   },
   {
     "id": 22,
-    "task": "创建 FactorAnalysis/evaluator.py：FactorEvaluator 类，编排所有分析步骤",
+    "task": "实现 FactorAnalysis/cost.py：按比例滑差的交易成本向量化扣除",
     "passes": false,
     "deps": [
-      15,
-      16,
-      17,
-      18,
-      19,
-      20,
-      21
+      18
     ]
   },
   {
     "id": 23,
-    "task": "创建 FactorAnalysis/report.py：生成包含所有关键指标的摘要报告 DataFrame",
+    "task": "在 FactorAnalysis/metrics.py 中实现 Sharpe/Calmar/Sortino 比率计算",
     "passes": false,
     "deps": [
-      22
+      17
     ]
   },
   {
     "id": 24,
+    "task": "创建 FactorAnalysis/evaluator.py：FactorEvaluator 类，编排所有分析步骤",
+    "passes": false,
+    "deps": [
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  {
+    "id": 25,
+    "task": "创建 FactorAnalysis/report.py：生成包含所有关键指标的摘要报告 DataFrame",
+    "passes": false,
+    "deps": [
+      24
+    ]
+  },
+  {
+    "id": 26,
+    "task": "FactorAnalysis 端到端验证测试：使用合成数据验证 FactorEvaluator 全流程——IC/RankIC/ICIR 数值合理性、分组收益单调性、净值曲线无 NaN、交易成本扣除后收益下降、report 输出 DataFrame 包含所有关键列",
+    "passes": false,
+    "deps": [
+      25
+    ]
+  },
+  {
+    "id": 27,
     "task": "生成根目录的 requirements.txt，包含所有项目依赖",
     "passes": false,
     "deps": []
+  },
+  {
+    "id": 28,
+    "task": "项目级冒烟测试：验证 requirements.txt 可安装无冲突、所有模块（CryptoDataProviders/CryptoDB_feather/FactorLib/FactorAnalysis/scripts）导入正常、运行 pipeline --dry-run 或等效空跑不报错",
+    "passes": false,
+    "deps": [
+      27
+    ]
   }
 ]
