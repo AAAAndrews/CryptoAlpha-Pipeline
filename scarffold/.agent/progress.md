@@ -3,6 +3,29 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 21 — FactorAnalysis/portfolio.py 多空对冲净值曲线 / Long-Short Hedged Equity Curve
+
+Implemented `calc_top_bottom_curve(factor, returns, n_groups=5, top_k=1, bottom_k=1)` in `FactorAnalysis/portfolio.py`:
+
+1. **`calc_top_bottom_curve(factor, returns, n_groups=5, top_k=1, bottom_k=1)`** — 每个截面选取因子值最高的 top_k 组做多、最低的 bottom_k 组做空，日收益 = 多头平均收益 + 空头平均收益（空头已取反），计算累积净值曲线。内部调用 `quantile_group` 获取分组标签，按截面 groupby 分别计算多空收益后合并。
+2. 参数校验：`top_k < 1` 或 `bottom_k < 1` 或 `top_k + bottom_k > n_groups` 抛出 `ValueError`。
+3. 全 NaN 因子 → 日收益为 0 → 平坦净值 1.0。
+4. 更新 `__init__.py` 添加 `from .portfolio import calc_top_bottom_curve`。
+
+**Verification**: 22 checks passed — import OK, __all__ export OK, module-level import OK, shape/type/DatetimeIndex/float dtype, start value 1.0, no NaN/all finite, positive factor → hedge > long & > short, top_k=2/bottom_k=2/n_groups=5 variants, ValueError on invalid top_k (0) / bottom_k (0) / top_k+bottom_k > n_groups, all-NaN → flat curve, single-symbol edge case.
+
+**Usage**:
+```python
+from FactorAnalysis import calc_top_bottom_curve
+
+curve = calc_top_bottom_curve(factor_series, returns_series, n_groups=5, top_k=1, bottom_k=1)
+# curve: pd.Series indexed by timestamp, starting at 1.0
+# Long the top_k highest factor groups, short the bottom_k lowest groups
+# top_k + bottom_k must not exceed n_groups
+```
+
+---
+
 ### [2026-03-31] Task 20 — FactorAnalysis/portfolio.py 仅空组净值曲线 / Short-Only Equity Curve
 
 Implemented `calc_short_only_curve(factor, returns, n_groups=5, bottom_k=1)` in `FactorAnalysis/portfolio.py`:

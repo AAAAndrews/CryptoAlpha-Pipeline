@@ -152,7 +152,7 @@
   {
     "id": 21,
     "task": "实现 FactorAnalysis/portfolio.py：top-N 多头减去 bottom-N 空头组合净值",
-    "passes": false,
+    "passes": true,
     "deps": [
       18
     ]

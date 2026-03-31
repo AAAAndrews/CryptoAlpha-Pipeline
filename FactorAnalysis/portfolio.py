@@ -106,3 +106,60 @@ def calc_short_only_curve(
     equity = (1.0 + daily_returns).cumprod()
     equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
     return equity
+
+
+def calc_top_bottom_curve(
+    factor: pd.Series,
+    returns: pd.Series,
+    n_groups: int = 5,
+    top_k: int = 1,
+    bottom_k: int = 1,
+) -> pd.Series:
+    """
+    计算多空对冲组合净值曲线：做多 top_k 组 - 做空 bottom_k 组 / Calculate long-short hedged equity curve.
+
+    每个截面选取因子值最高的 top_k 组做多、最低的 bottom_k 组做空，
+    日收益 = 多头收益 - 空头收益（空头收益取反后相加）。
+    At each cross-section, go long on top_k highest groups and short on bottom_k lowest groups.
+    Daily return = long return - short return (short returns are negated before adding).
+
+    Parameters / 参数:
+        factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
+        returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns, MultiIndex (timestamp, symbol)
+        n_groups: 分组数量，默认 5 / Number of groups, default 5
+        top_k: 做多最高的几组，默认 1 / Number of top groups to long, default 1
+        bottom_k: 做空最低的几组，默认 1 / Number of bottom groups to short, default 1
+
+    Returns / 返回:
+        pd.Series: 净值曲线，index 为 timestamp，起始值为 1.0
+                   Equity curve indexed by timestamp, starting value 1.0
+    """
+    if top_k < 1:
+        raise ValueError(f"top_k 必须 >= 1，当前值: {top_k}")
+    if bottom_k < 1:
+        raise ValueError(f"bottom_k 必须 >= 1，当前值: {bottom_k}")
+    if top_k + bottom_k > n_groups:
+        raise ValueError(
+            f"top_k ({top_k}) + bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})"
+        )
+
+    labels = quantile_group(factor, n_groups=n_groups)
+    df = pd.DataFrame({"label": labels, "returns": returns})
+
+    top_labels = set(range(n_groups - top_k, n_groups))
+    bottom_labels = set(range(bottom_k))
+
+    def _hedge_return(g: pd.DataFrame) -> float:
+        """截面内多空对冲收益 / Long-short hedged return in one cross-section."""
+        valid = g["returns"].notna() & np.isfinite(g["returns"])
+        long_mask = valid & g["label"].isin(top_labels)
+        short_mask = valid & g["label"].isin(bottom_labels)
+        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
+        short_ret = -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
+        return long_ret + short_ret
+
+    daily_returns = df.groupby(level=0).apply(_hedge_return)
+    # 累积净值 / cumulative equity
+    equity = (1.0 + daily_returns).cumprod()
+    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
+    return equity
