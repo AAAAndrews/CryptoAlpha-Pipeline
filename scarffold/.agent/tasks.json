@@ -74,7 +74,7 @@
   {
     "id": 11,
     "task": "创建 FactorLib/base.py：BaseFactor 抽象基类，带有抽象的 calculate(data) 方法和文档字符串约定",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

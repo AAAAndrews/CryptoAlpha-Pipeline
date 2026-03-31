@@ -5,6 +5,32 @@
 
 ---
 
+### [2026-03-31] Task 11 — BaseFactor 抽象基类 / BaseFactor Abstract Base Class
+
+Created `FactorLib/` module directory with two files:
+
+1. **`FactorLib/base.py`** — `BaseFactor(ABC)` abstract base class:
+   - Inherits from `ABC`, enforces `calculate(data: pd.DataFrame) -> pd.Series` via `@abstractmethod`
+   - `name` attribute defaults to class name
+   - Bilingual docstrings with parameter/return documentation for `calculate()`
+   - `__repr__` for readable string representation
+
+2. **`FactorLib/__init__.py`** — public exports: `BaseFactor`
+
+**Verification**: 6 checks passed — abstract (cannot instantiate), inherits ABC, has calculate method, docstring present, subclass works and returns Series, repr correct.
+
+**Usage**:
+```python
+from FactorLib.base import BaseFactor
+
+class MyFactor(BaseFactor):
+    def calculate(self, data: pd.DataFrame) -> pd.Series:
+        # data: long-format DataFrame with timestamp, symbol, OHLC
+        return data.groupby('timestamp')['close'].pct_change()
+```
+
+---
+
 ### [2026-03-31] Task 10 — 短期数据加载器验证测试 / Short-Term Loader Validation Tests
 
 Created `scarffold/.agent/test_short_term_loader.py` with 4 validation tests:
