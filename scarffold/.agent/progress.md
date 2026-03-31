@@ -3,6 +3,27 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 22 — FactorAnalysis/cost.py 交易成本向量化扣除 / Transaction Cost Deduction
+
+Implemented `deduct_cost(daily_returns, cost_rate=0.001)` in `FactorAnalysis/cost.py`:
+
+1. **`deduct_cost(daily_returns, cost_rate=0.001)`** — 假设每个截面均换仓，对日收益率向量化扣除固定比例滑差成本，重新计算累积净值曲线。`adjusted_returns = daily_returns - cost_rate`，再 `(1 + adjusted_returns).cumprod()`。
+2. 参数校验：`cost_rate < 0` 或 `cost_rate >= 1` 抛出 `ValueError`。
+3. 更新 `__init__.py` 添加 `from .cost import deduct_cost`。
+
+**Verification**: 20 checks passed — import OK, public export OK, shape/type/DatetimeIndex/float dtype, start value 1.0, no NaN/all finite, cost reduces equity, higher cost = lower equity, default cost_rate=0.001, ValueError on negative/>=1/1.0 cost_rate, zero returns → declining, single day, negative returns, cost_rate=0 matches manual cumprod.
+
+**Usage**:
+```python
+from FactorAnalysis import deduct_cost
+
+# daily_returns: pd.Series indexed by timestamp
+adjusted_equity = deduct_cost(daily_returns, cost_rate=0.001)
+# adjusted_equity: pd.Series, cumulative equity curve after slippage deduction
+```
+
+---
+
 ### [2026-04-01] Task 21 — FactorAnalysis/portfolio.py 多空对冲净值曲线 / Long-Short Hedged Equity Curve
 
 Implemented `calc_top_bottom_curve(factor, returns, n_groups=5, top_k=1, bottom_k=1)` in `FactorAnalysis/portfolio.py`:

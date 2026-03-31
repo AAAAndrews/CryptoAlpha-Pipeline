@@ -160,7 +160,7 @@
   {
     "id": 22,
     "task": "实现 FactorAnalysis/cost.py：按比例滑差的交易成本向量化扣除",
-    "passes": false,
+    "passes": true,
     "deps": [
       18
     ]
