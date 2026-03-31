@@ -5,6 +5,26 @@
 
 ---
 
+### [2026-03-31] Task 18 — FactorAnalysis/grouping.py 分位数分组 / Quantile Grouping
+
+Implemented `quantile_group(factor, n_groups=5)` in `FactorAnalysis/grouping.py`:
+
+1. **`quantile_group(factor, n_groups=5)`** — 每个时间截面上按因子值分位数分成 n_groups 组，组标签 0（最低）到 n_groups-1（最高）。使用 `pd.qcut` + `groupby(level=0)` 实现横截面分组。NaN/Inf 值保留 NaN 标签。
+2. 参数校验：`n_groups < 2` 抛出 `ValueError`。
+3. 更新 `__init__.py` 添加 `from .grouping import quantile_group`。
+
+**Verification**: 21 checks passed — import OK, public export OK, 5/3/10 组标签正确, 分组均匀性, 因子均值单调递增, NaN/Inf/全 NaN/单截面边界情况, 参数校验。
+
+**Usage**:
+```python
+from FactorAnalysis import quantile_group
+
+labels = quantile_group(factor_series, n_groups=5)
+# labels: pd.Series, same MultiIndex, values 0..4 (lowest to highest quantile)
+```
+
+---
+
 ### [2026-03-31] Task 17 — FactorAnalysis/metrics.py IC/RankIC/ICIR
 
 Implemented three core factor evaluation metrics in `FactorAnalysis/metrics.py`:

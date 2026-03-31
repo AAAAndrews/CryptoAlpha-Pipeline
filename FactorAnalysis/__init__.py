@@ -6,6 +6,7 @@ Decoupled from DEAP, uses pandas DataFrame as primary data format, compatible wi
 """
 
 from .metrics import calc_ic, calc_rank_ic, calc_icir
+from .grouping import quantile_group
 
 __all__ = [
     # 核心指标 / Core metrics

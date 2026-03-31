@@ -128,7 +128,7 @@
   {
     "id": 18,
     "task": "实现 FactorAnalysis/grouping.py：分位数分组分割，可调节分组数量",
-    "passes": false,
+    "passes": true,
     "deps": [
       16
     ]
