@@ -5,6 +5,31 @@
 
 ---
 
+### [2026-03-31] Task 17 — FactorAnalysis/metrics.py IC/RankIC/ICIR
+
+Implemented three core factor evaluation metrics in `FactorAnalysis/metrics.py`:
+
+1. **`calc_ic(factor, returns)`** — Daily Pearson IC via `groupby(level=0)` + `Series.corr()`. Returns `pd.Series` indexed by timestamp.
+2. **`calc_rank_ic(factor, returns)`** — Daily Spearman Rank IC via `Series.corr(method='spearman')`. Returns `pd.Series` indexed by timestamp.
+3. **`calc_icir(factor, returns)`** — ICIR = mean(IC) / std(IC). Returns `float`.
+
+All functions accept `pd.Series` with MultiIndex `(timestamp, symbol)`, matching FactorLib output format. Handles NaN/Inf filtering, single-asset edge case, constant-factor zero-variance case.
+
+Updated `__init__.py` with `from .metrics import calc_ic, calc_rank_ic, calc_icir`.
+
+**Verification**: 31 checks passed — import OK, IC/RankIC series type/length/range, positive/no/perfect correlation scenarios, edge cases (single asset, all NaN, constant factor), public exports.
+
+**Usage**:
+```python
+from FactorAnalysis import calc_ic, calc_rank_ic, calc_icir
+
+ic = calc_ic(factor_series, returns_series)       # pd.Series (daily IC)
+rank_ic = calc_rank_ic(factor_series, returns_series)  # pd.Series (daily Rank IC)
+icir = calc_icir(factor_series, returns_series)    # float
+```
+
+---
+
 ### [2026-03-31] Task 16 — FactorAnalysis 模块结构 / FactorAnalysis Module Structure
 
 Created `FactorAnalysis/` module directory with 7 files:

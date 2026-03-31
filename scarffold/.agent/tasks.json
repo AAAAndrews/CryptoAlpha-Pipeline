@@ -120,7 +120,7 @@
   {
     "id": 17,
     "task": "实现 FactorAnalysis/metrics.py：使用 pandas 实现 IC、RankIC、ICIR（重构自 deap_alpha 的 numpy 版本）",
-    "passes": false,
+    "passes": true,
     "deps": [
       16
     ]
