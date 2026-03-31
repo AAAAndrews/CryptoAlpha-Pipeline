@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Tasks",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "task", "passes", "deps"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "task": {
+        "type": "string",
+        "minLength": 1
+      },
+      "passes": {
+        "type": "boolean"
+      },
+      "deps": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uniqueItems": true
+      }
+    }
+  }
+}

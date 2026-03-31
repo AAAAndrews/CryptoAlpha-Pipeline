@@ -45,3 +45,9 @@ local.secrets.*
 # Local safety backup of old git metadata
 .git_history_backup_*/
 .git_reinit_backup_*/
+
+# Agent and Pipeline Scripts
+# 1-init-planner.bat
+# 2-run-coder.bat
+# Makefile
+# /scarffold/

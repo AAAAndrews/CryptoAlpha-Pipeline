@@ -1,0 +1,8 @@
+# Progress Log
+
+# Append newest entries to the top in this format:
+# [YYYY-MM-DD HH:MM] summary
+
+[2026-03-31] Task 1 complete: created CryptoDataProviders/utils/retry.py with retry_with_backoff decorator (exponential backoff, jitter, max_delay cap, exception filtering, on_retry callback). Updated utils/__init__.py exports. NOTE: shell/WSL unavailable — could not run runtime tests; verified logic statically. Next: Task 2 (integrate retry into market_api.py) is unblocked.
+
+[2026-03-31 00:00] Planning phase complete: generated architecture.md (tech stack, file layout, core flow), tasks.json (24 fine-grained tasks across 4 phases), root requirements.txt

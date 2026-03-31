@@ -1,0 +1,17 @@
+# CryptoAlpha-Pipeline dependencies
+# 数据处理 / Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=12.0.0
+scipy>=1.10.0
+numba>=0.57.0
+
+# 网络请求 / Network
+requests>=2.31.0
+
+# 终端 UI / Terminal UI
+tqdm>=4.65.0
+rich>=13.0.0
+
+# 遗传编程 / Genetic programming (DEAP factor mining)
+deap>=1.4.0

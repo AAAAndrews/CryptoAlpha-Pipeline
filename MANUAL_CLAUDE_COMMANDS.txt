@@ -1,0 +1,25 @@
+手动执行 Claude Code（可跳过 2-run-coder.bat）
+适用场景：你已经运行过 1-init-planner.bat，并且 scarffold/.agent/tasks.json 已生成。
+
+1) 进入项目目录（PowerShell）
+Set-Location -LiteralPath "f:\MyCryptoTrading\CryptoAlpha\CryptoAlpha-Pipeline"
+
+2) 单次执行：只推进一个任务（推荐）
+claude -p "Follow CLAUDE.md SOP strictly. Execute exactly one next pending task, verify it, update state, commit, then exit."
+
+3) 如果你希望跳过权限确认（可选）
+claude -p "Follow CLAUDE.md SOP strictly. Execute exactly one next pending task, verify it, update state, commit, then exit." --dangerously-skip-permissions
+
+4) 查看当前是否还有未完成任务（可选）
+py -3 -c "import json;d=json.load(open('scarffold/.agent/tasks.json','r',encoding='utf-8'));print(any(not x.get('passes',True) for x in d))"
+
+5) 手动循环执行（可选，最多 20 次）
+for ($i=1; $i -le 20; $i++) {
+  claude -p "Follow CLAUDE.md SOP strictly. Execute exactly one next pending task, verify it, update state, commit, then exit."
+  py -3 -c "import json;d=json.load(open('scarffold/.agent/tasks.json','r',encoding='utf-8'));import sys;sys.exit(0 if any(not x.get('passes',True) for x in d) else 1)"
+  if ($LASTEXITCODE -eq 1) { Write-Host "All tasks complete."; break }
+}
+
+说明：
+- 建议优先使用“单次执行”命令，每次确认结果后再执行下一次。
+- 如果你的环境没有 py 命令，可把上面的 py -3 替换为 python。
