@@ -289,8 +289,13 @@ def run_cleanup(
         print(f"   For actual cleaning, set dry_run=False")
     else:
         print(f"\n✓ The data has actually been modified")
-    
-    print("=" * 70)
+
+    # 返回清理统计 / Return cleanup stats for pipeline summary
+    return {
+        "scanned": len(all_symbols),
+        "active": len(active_symbols),
+        "cleaned": len(results),
+    }
 
 
 def main():

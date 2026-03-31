@@ -40,6 +40,10 @@ def run_pipeline(kline_type: str, interval: str, dry_run: bool, skip_bulk: bool,
     pipeline_start = time.time()
     errors = []
 
+    # 各步骤统计 / Per-step statistics
+    bulk_stats = None
+    cleanup_stats = None
+
     # Header / 头部信息
     print("=" * 70)
     print(f"  CryptoAlpha Data Pipeline")
@@ -55,13 +59,13 @@ def run_pipeline(kline_type: str, interval: str, dry_run: bool, skip_bulk: bool,
         try:
             from scripts.update_bulk import main as run_bulk
             step_start = time.time()
-            run_bulk()
+            bulk_stats = run_bulk()
             print(f"\n  Bulk download finished in {time.time() - step_start:.1f}s")
         except Exception as e:
             errors.append(f"Bulk download failed: {e}")
             print(f"\n  ERROR: Bulk download failed — {e}")
             print("  Skipping cleanup since bulk download did not complete.")
-            _print_summary(pipeline_start, errors)
+            _print_summary(pipeline_start, errors, bulk_stats, cleanup_stats)
             return
     else:
         print(f"\n  [Step 1/2] Bulk download — SKIPPED")
@@ -74,7 +78,7 @@ def run_pipeline(kline_type: str, interval: str, dry_run: bool, skip_bulk: bool,
         try:
             from scripts.cleanup_fake_data import run_cleanup
             step_start = time.time()
-            run_cleanup(
+            cleanup_stats = run_cleanup(
                 kline_type=kline_type,
                 interval=interval,
                 dry_run=dry_run,
@@ -87,20 +91,55 @@ def run_pipeline(kline_type: str, interval: str, dry_run: bool, skip_bulk: bool,
     else:
         print(f"\n  [Step 2/2] Cleanup — SKIPPED")
 
-    _print_summary(pipeline_start, errors)
+    _print_summary(pipeline_start, errors, bulk_stats, cleanup_stats)
 
 
-def _print_summary(pipeline_start: float, errors: list):
-    """Print pipeline execution summary / 打印管道执行摘要"""
+def _print_summary(pipeline_start: float, errors: list, bulk_stats: dict = None, cleanup_stats: dict = None):
+    """
+    Print pipeline execution summary with per-step statistics.
+    打印包含各步骤统计的管道执行摘要。
+
+    Parameters:
+        pipeline_start: 管道开始时间戳 / Pipeline start timestamp
+        errors: 错误列表 / Error list
+        bulk_stats: 批量下载统计 / Bulk download stats dict
+        cleanup_stats: 清理统计 / Cleanup stats dict
+    """
     elapsed = time.time() - pipeline_start
     print("\n" + "=" * 70)
-    print(f"  Pipeline finished in {elapsed:.1f}s")
+    print(f"  Pipeline Summary")
+    print(f"  Total time: {elapsed:.1f}s")
+    print("=" * 70)
+
+    # 批量下载统计 / Bulk download stats
+    if bulk_stats:
+        print(f"  Bulk download:")
+        print(f"    Updated pairs: {bulk_stats.get('pairs', 'N/A')}")
+        print(f"    Intervals:     {bulk_stats.get('intervals', 'N/A')}")
+        print(f"    Kline type:    {bulk_stats.get('kline_type', 'N/A')}")
+    else:
+        print(f"  Bulk download:    — (skipped or failed)")
+
+    # 清理统计 / Cleanup stats
+    if cleanup_stats:
+        print(f"  Cleanup:")
+        print(f"    Scanned pairs:  {cleanup_stats.get('scanned', 'N/A')}")
+        print(f"    Active pairs:   {cleanup_stats.get('active', 'N/A')}")
+        print(f"    Cleaned pairs:  {cleanup_stats.get('cleaned', 'N/A')}")
+    else:
+        print(f"  Cleanup:          — (skipped or failed)")
+
+    # 错误统计 / Error stats
     if errors:
-        print(f"  Errors: {len(errors)}")
+        print(f"  Errors:           {len(errors)}")
         for err in errors:
             print(f"    - {err}")
     else:
-        print("  All steps completed successfully.")
+        print(f"  Errors:           0")
+
+    # 最终状态 / Final status
+    status = "COMPLETED WITH ERRORS" if errors else "ALL STEPS PASSED"
+    print(f"\n  Status: {status}")
     print("=" * 70)
 
 

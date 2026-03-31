@@ -52,7 +52,7 @@
   {
     "id": 8,
     "task": "为 scripts/pipeline.py 添加管道摘要日志：统计更新的交易对数量、清理的交易对数量、错误数量",
-    "passes": false,
+    "passes": true,
     "deps": [
       7
     ]

@@ -65,12 +65,19 @@ def main():
     print(f"KLine type:{update_params['kline_type_list']}")
     print(f"Concurrent threads:{update_params['max_workers']}")
     print("-" * 60)
-    
+
     run_bulk_updater(**update_params)
-    
+
     print("\n" + "=" * 60)
     print("Batch download completed!")
     print("=" * 60)
+
+    # 返回下载统计 / Return download stats for pipeline summary
+    return {
+        "pairs": len(trading_pairs_list),
+        "intervals": update_params["interval_list"],
+        "kline_type": update_params["kline_type_list"],
+    }
 
 
 if __name__ == "__main__":
