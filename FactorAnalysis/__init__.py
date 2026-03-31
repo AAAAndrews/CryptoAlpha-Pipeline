@@ -9,6 +9,7 @@ from .metrics import calc_ic, calc_rank_ic, calc_icir, calc_sharpe, calc_calmar,
 from .grouping import quantile_group
 from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
 from .cost import deduct_cost
+from .evaluator import FactorEvaluator
 
 __all__ = [
     # 核心指标 / Core metrics

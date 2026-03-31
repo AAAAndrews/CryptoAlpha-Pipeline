@@ -176,7 +176,7 @@
   {
     "id": 24,
     "task": "创建 FactorAnalysis/evaluator.py：FactorEvaluator 类，编排所有分析步骤",
-    "passes": false,
+    "passes": true,
     "deps": [
       17,
       18,

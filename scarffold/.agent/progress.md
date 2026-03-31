@@ -3,6 +3,39 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 24 — FactorAnalysis/evaluator.py FactorEvaluator 编排器 / FactorEvaluator Orchestrator
+
+Implemented `FactorEvaluator` class in `FactorAnalysis/evaluator.py`:
+
+1. **`FactorEvaluator(factor, returns, n_groups=5, top_k=1, bottom_k=1, cost_rate=0.001, risk_free_rate=0.0, periods_per_year=252)`** — 因子绩效检验编排器，按顺序执行全部分析步骤并将结果存储在实例属性中。
+2. **`run()`** — 依次执行：IC 分析 (ic/rank_ic/icir) → 分组 (group_labels) → 净值曲线 (long/short/hedge) → 成本扣除 (hedge_curve_after_cost) → 绩效比率 (sharpe/calmar/sortino, 含成本后版本)。返回 self 支持链式调用。
+3. 所有结果属性初始化为 None，run() 后可直接访问，供 `generate_report` 消费。
+
+更新 `__init__.py` 添加 `from .evaluator import FactorEvaluator`。
+
+**Verification**: 72 checks passed — import OK, instantiation with default/custom params, run() returns self, IC metrics (Series type/length/index/finite), group labels (Series/index/range), equity curves (long/short/hedge: type/index/length/start/no-NaN/finite), cost-adjusted curve (type/start/no-NaN/<=hedge), performance ratios (6 ratios: type/finite, sharpe_after_cost<=sharpe), custom params run, __all__ export, all-NaN edge case, non-zero risk_free_rate edge case.
+
+**Usage**:
+```python
+from FactorAnalysis import FactorEvaluator
+
+ev = FactorEvaluator(factor_series, returns_series, n_groups=5, cost_rate=0.001)
+ev.run()
+
+# IC 指标
+print(ev.icir)         # float
+
+# 净值曲线
+print(ev.hedge_curve)  # pd.Series
+
+# 绩效比率（成本前 / 成本后）
+print(ev.sharpe, ev.sharpe_after_cost)
+print(ev.calmar, ev.calmar_after_cost)
+print(ev.sortino, ev.sortino_after_cost)
+```
+
+---
+
 ### [2026-04-01] Task 23 — FactorAnalysis/metrics.py Sharpe/Calmar/Sortino 比率 / Performance Ratios
 
 Implemented three annualized performance ratio functions in `FactorAnalysis/metrics.py`:
