@@ -3,6 +3,28 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 27 — 根目录 requirements.txt 更新 / Root requirements.txt Update
+
+Updated root `requirements.txt` from 9 to 11 packages by scanning all project Python files for third-party imports:
+
+**Added packages:**
+1. **`matplotlib>=3.7.0`** — used by `Cross_Section_Factor/crypto_gp_1h.py` and `deap_alpha/utils.py` for visualization
+2. **`joblib>=1.3.0`** — used by `Cross_Section_Factor/crypto_gp_1h.py` and `deap_alpha/utils.py` for parallel computing
+
+**Complete dependency list (11 packages):**
+- 数据处理: pandas, numpy, pyarrow, scipy, numba
+- 网络请求: requests
+- 终端 UI: tqdm, rich
+- 可视化: matplotlib
+- 并行计算: joblib
+- 遗传编程: deap
+
+**Verification**: All 11 packages parse correctly via `pkg_resources.Requirement.parse()`. AST scan of all `.py` files confirms no missing third-party imports.
+
+**Usage**: `pip install -r requirements.txt`
+
+---
+
 ### [2026-04-01] Task 26 — FactorAnalysis 端到端验证测试 / E2E Validation Tests
 
 Created `scarffold/.agent/test_factoranalysis_e2e.py` with 94 validation checks across 13 areas:

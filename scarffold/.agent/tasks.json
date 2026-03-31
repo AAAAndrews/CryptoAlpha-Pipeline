@@ -206,7 +206,7 @@
   {
     "id": 27,
     "task": "生成根目录的 requirements.txt，包含所有项目依赖",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
