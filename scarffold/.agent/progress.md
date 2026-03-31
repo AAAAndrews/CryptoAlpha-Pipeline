@@ -5,6 +5,22 @@
 
 ---
 
+### [2026-03-31] Task 15 — FactorLib 集成验证测试 / FactorLib Integration Tests
+
+Created `scarffold/.agent/test_factorlib_integration.py` with 38 validation checks across 5 areas:
+
+1. **BaseFactor ABC** — import OK, cannot instantiate (TypeError)
+2. **Alpha1 Momentum** — inheritance, repr, Series shape, NaN count (lookback × symbols), finite values
+3. **Alpha2 Volatility** — inheritance, repr, Series shape, NaN count (lookback × symbols), finite, non-negative
+4. **Registry** — clear → empty, single/multiple register, get by name, get missing → None, duplicate warning, non-BaseFactor TypeError, clear
+5. **Public exports** — all 7 names accessible via `FactorLib.*`, `__all__` matches
+
+All 38 checks PASSED.
+
+**Usage**: `python scarffold/.agent/test_factorlib_integration.py`
+
+---
+
 ### [2026-03-31] Task 14 — 因子注册表 / Factor Registry
 
 Created `FactorLib/registry.py` with a global factor registry:

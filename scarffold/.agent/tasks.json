@@ -104,7 +104,7 @@
   {
     "id": 15,
     "task": "FactorLib 集成验证测试：验证 BaseFactor 抽象类不可实例化、Alpha1/Alpha2 正确继承并产出预期形状的 Series、registry 注册/列出/获取因子功能正常、__init__.py 公共导出完整",
-    "passes": false,
+    "passes": true,
     "deps": [
       12,
       13,
