@@ -3,6 +3,25 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-03-31] Task 19 — FactorAnalysis/portfolio.py 仅多组净值曲线 / Long-Only Equity Curve
+
+Implemented `calc_long_only_curve(factor, returns, n_groups=5, top_k=1)` in `FactorAnalysis/portfolio.py`:
+
+1. **`calc_long_only_curve(factor, returns, n_groups=5, top_k=1)`** — 每个截面选取因子值最高的 top_k 组，等权持有，计算累积净值曲线。内部调用 `quantile_group` 获取分组标签，按截面 groupby 计算等权平均收益，再 cumprod 得到净值。
+2. 参数校验：`top_k < 1` 或 `top_k > n_groups` 抛出 `ValueError`。
+3. 全 NaN 因子 → 日收益为 0 → 平坦净值 1.0。
+4. 更新 `__init__.py` 添加 `from .portfolio import calc_long_only_curve`。
+
+**Verification**: 13 checks passed — import OK, __all__ export OK, shape/type/length, start value 1.0, no NaN, top_k=2/5 variants, ValueError on invalid top_k, good factor → positive curve, all-NaN → flat curve, single-symbol edge case, module-level import.
+
+**Usage**:
+```python
+from FactorAnalysis import calc_long_only_curve
+
+curve = calc_long_only_curve(factor_series, returns_series, n_groups=5, top_k=1)
+# curve: pd.Series indexed by timestamp, starting at 1.0
+```
+
 ---
 
 ### [2026-03-31] Task 18 — FactorAnalysis/grouping.py 分位数分组 / Quantile Grouping
