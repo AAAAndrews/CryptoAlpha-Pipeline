@@ -30,7 +30,7 @@
   {
     "id": 5,
     "task": "将活跃交易对过滤器集成到 update_api.py 中：在拉取前跳过已下架的交易对",
-    "passes": false,
+    "passes": true,
     "deps": [
       4
     ]
