@@ -1,7 +1,7 @@
 [
   {"id": 1,  "task": "创建重试工具模块 CryptoDataProviders/utils/retry.py，带有指数退避装饰器", "passes": true, "deps": []},
   {"id": 2,  "task": "在 market_api.py 中用 retry.py 的重试装饰器包装 binance_fetch_klines", "passes": true, "deps": [1]},
-  {"id": 3,  "task": "将重试逻辑集成到 db_manager.py 的 run_binance_rest_updater 中，实现单个交易对的错误恢复", "passes": false, "deps": [1]},
+  {"id": 3,  "task": "将重试逻辑集成到 db_manager.py 的 run_binance_rest_updater 中，实现单个交易对的错误恢复", "passes": true, "deps": [1]},
   {"id": 4,  "task": "创建活跃交易对校验工具：获取活跃交易对并与本地数据库交易对列表对比", "passes": false, "deps": []},
   {"id": 5,  "task": "将活跃交易对过滤器集成到 update_api.py 中：在拉取前跳过已下架的交易对", "passes": false, "deps": [4]},
   {"id": 6,  "task": "创建统一管道脚本 scripts/pipeline.py：按顺序执行 update_bulk 然后 cleanup", "passes": false, "deps": []},
