@@ -5,7 +5,7 @@ FactorAnalysis — 因子绩效检验模块 / Factor performance analysis module
 Decoupled from DEAP, uses pandas DataFrame as primary data format, compatible with FactorLib output.
 """
 
-from .metrics import calc_ic, calc_rank_ic, calc_icir
+from .metrics import calc_ic, calc_rank_ic, calc_icir, calc_sharpe, calc_calmar, calc_sortino
 from .grouping import quantile_group
 from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
 from .cost import deduct_cost

@@ -3,6 +3,34 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 23 — FactorAnalysis/metrics.py Sharpe/Calmar/Sortino 比率 / Performance Ratios
+
+Implemented three annualized performance ratio functions in `FactorAnalysis/metrics.py`:
+
+1. **`calc_sharpe(equity, risk_free_rate=0.0, periods_per_year=252)`** — 年化 Sharpe 比率。从净值曲线计算日收益率，Sharpe = (mean(excess_ret) / std(excess_ret)) * sqrt(P)。
+2. **`calc_calmar(equity, periods_per_year=252)`** — 年化 Calmar 比率。Calmar = annualized_return / abs(max_drawdown)。年化收益率使用复合收益公式 `(1+total)^(1/years)-1`。
+3. **`calc_sortino(equity, risk_free_rate=0.0, periods_per_year=252)`** — 年化 Sortino 比率。下行偏差仅考虑低于 rf_daily 的收益率，Sortino = mean(excess) / downside_dev * sqrt(P)。
+
+边界处理：数据不足（<2 天）返回 0.0；标准差/下行偏差为 0 返回 0.0；NaN/Inf 自动过滤。
+更新 `__init__.py` 添加 `from .metrics import calc_sharpe, calc_calmar, calc_sortino`。
+
+**Verification**: 30 checks passed — import OK, __all__ OK, type/finite, positive/negative/flat drift sign correctness, risk-free rate monotonicity, edge cases (1-day/2-day/NaN), periods_per_year sensitivity, all-positive-returns sortino=0.
+
+**Usage**:
+```python
+from FactorAnalysis import calc_sharpe, calc_calmar, calc_sortino
+
+# equity: pd.Series, cumulative equity curve starting at 1.0
+sharpe = calc_sharpe(equity, risk_free_rate=0.03)     # annualized Sharpe
+calmar = calc_calmar(equity)                           # annualized Calmar
+sortino = calc_sortino(equity, risk_free_rate=0.03)   # annualized Sortino
+```
+
+---
+
+> Append newest entries to the top in this format:
+> `[YYYY-MM-DD HH:MM] summary`
+
 ### [2026-04-01] Task 22 — FactorAnalysis/cost.py 交易成本向量化扣除 / Transaction Cost Deduction
 
 Implemented `deduct_cost(daily_returns, cost_rate=0.001)` in `FactorAnalysis/cost.py`:

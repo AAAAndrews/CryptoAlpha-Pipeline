@@ -168,7 +168,7 @@
   {
     "id": 23,
     "task": "在 FactorAnalysis/metrics.py 中实现 Sharpe/Calmar/Sortino 比率计算",
-    "passes": false,
+    "passes": true,
     "deps": [
       17
     ]
