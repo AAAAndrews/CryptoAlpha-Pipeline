@@ -212,7 +212,7 @@
   {
     "id": 28,
     "task": "项目级冒烟测试：验证 requirements.txt 可安装无冲突、所有模块（CryptoDataProviders/CryptoDB_feather/FactorLib/FactorAnalysis/scripts）导入正常、运行 pipeline --dry-run 或等效空跑不报错",
-    "passes": false,
+    "passes": true,
     "deps": [
       27
     ]

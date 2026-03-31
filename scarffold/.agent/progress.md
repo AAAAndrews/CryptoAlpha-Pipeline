@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 28 — 项目级冒烟测试 / Project-level Smoke Tests
+
+Created `scarffold/.agent/test_smoke.py` with 52 validation checks across 3 areas:
+
+1. **requirements.txt 解析** — 文件存在、非空、所有依赖行可解析为 Requirement、无重复包名、关键包已安装
+2. **模块导入** — CryptoDataProviders（5 checks）、CryptoDB_feather.config（3 checks）、CryptoDB_feather.core（8 checks）、FactorLib（8 checks）、FactorAnalysis（14 checks）、scripts（4 checks）全部导入正常，__all__ 导出完整
+3. **pipeline --dry-run 空跑** — 使用 `--skip-bulk --skip-cleanup` 避免网络请求，验证退出码为 0、输出包含 "Pipeline Summary" 和 "ALL STEPS PASSED"
+
+All 52 checks PASSED. **所有 28 个任务已完成 / All 28 tasks completed.**
+
+**Usage**: `python scarffold/.agent/test_smoke.py`
+
+---
+
 ### [2026-04-01] Task 27 — 根目录 requirements.txt 更新 / Root requirements.txt Update
 
 Updated root `requirements.txt` from 9 to 11 packages by scanning all project Python files for third-party imports:
