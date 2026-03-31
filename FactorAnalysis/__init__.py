@@ -10,6 +10,7 @@ from .grouping import quantile_group
 from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
 from .cost import deduct_cost
 from .evaluator import FactorEvaluator
+from .report import generate_report
 
 __all__ = [
     # 核心指标 / Core metrics

@@ -3,6 +3,34 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-04-01] Task 25 — FactorAnalysis/report.py 绩效报告汇总 / Summary Report Generator
+
+Implemented `generate_report(evaluator)` in `FactorAnalysis/report.py`:
+
+1. **`generate_report(evaluator) -> pd.DataFrame`** — 从已调用 `run()` 的 FactorEvaluator 实例生成单行摘要 DataFrame，包含 16 个关键指标列。
+2. **IC 指标列**: `IC_mean`, `IC_std`, `RankIC_mean`, `RankIC_std`, `ICIR`
+3. **净值曲线期末收益列**: `long_return`, `short_return`, `hedge_return`, `hedge_return_after_cost`
+4. **绩效比率列**: `sharpe`, `calmar`, `sortino`, `sharpe_after_cost`, `calmar_after_cost`, `sortino_after_cost`
+5. **元信息列**: `n_days` (分析天数)
+6. 未调用 `run()` 时抛出 `ValueError`。
+7. 更新 `__init__.py` 添加 `from .report import generate_report`。
+
+**Verification**: 30 checks passed — import OK, public export OK, __all__ export OK, ValueError on unrun evaluator, DataFrame type, single row, 16 expected columns present, n_days int-like, ICIR float, all values finite, logical consistency (after_cost <= before_cost for hedge return and sharpe), custom params run, higher cost → lower return.
+
+**Usage**:
+```python
+from FactorAnalysis import FactorEvaluator, generate_report
+
+ev = FactorEvaluator(factor_series, returns_series, cost_rate=0.001)
+ev.run()
+
+report = generate_report(ev)
+# report: pd.DataFrame (1 row × 16 columns)
+print(report.T)  # 以列形式查看所有指标 / view all metrics as rows
+```
+
+---
+
 ### [2026-04-01] Task 24 — FactorAnalysis/evaluator.py FactorEvaluator 编排器 / FactorEvaluator Orchestrator
 
 Implemented `FactorEvaluator` class in `FactorAnalysis/evaluator.py`:
