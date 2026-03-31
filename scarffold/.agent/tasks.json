@@ -80,7 +80,7 @@
   {
     "id": 12,
     "task": "在 FactorLib/alpha_momentum.py 中实现 Alpha1 动量因子，继承 BaseFactor",
-    "passes": false,
+    "passes": true,
     "deps": [
       11
     ]

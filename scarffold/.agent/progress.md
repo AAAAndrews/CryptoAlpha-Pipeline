@@ -5,6 +5,28 @@
 
 ---
 
+### [2026-03-31] Task 12 — Alpha1 动量因子 / Alpha1 Momentum Factor
+
+Created `FactorLib/alpha_momentum.py` with `AlphaMomentum(BaseFactor)` class:
+
+- Calculates cumulative return over a configurable `lookback` window: `close.pct_change(lookback)` per symbol
+- Default `lookback=10`, name auto-updated to reflect parameter (e.g. `AlphaMomentum(lookback=10)`)
+- Bilingual docstrings with parameter/return documentation
+- Updated `FactorLib/__init__.py` to export `AlphaMomentum`
+
+**Verification**: 6 checks passed — inheritance, default NaN count, custom lookback NaN count, numerical correctness (0.025000), public export, repr.
+
+**Usage**:
+```python
+from FactorLib.alpha_momentum import AlphaMomentum
+
+factor = AlphaMomentum(lookback=10)
+momentum = factor.calculate(data)  # data: DataFrame with timestamp, symbol, close
+# Returns pd.Series of momentum values (positive = uptrend, negative = downtrend)
+```
+
+---
+
 ### [2026-03-31] Task 11 — BaseFactor 抽象基类 / BaseFactor Abstract Base Class
 
 Created `FactorLib/` module directory with two files:

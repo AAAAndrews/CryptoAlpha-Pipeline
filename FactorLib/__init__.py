@@ -5,6 +5,7 @@ FactorLib — 独立因子库模块 / Standalone factor library module
 For manually defined factors, decoupled from deap_alpha (GP auto-discovery).
 """
 
+from FactorLib.alpha_momentum import AlphaMomentum
 from FactorLib.base import BaseFactor
 
-__all__ = ["BaseFactor"]
+__all__ = ["BaseFactor", "AlphaMomentum"]
