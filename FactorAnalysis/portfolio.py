@@ -57,3 +57,52 @@ def calc_long_only_curve(
     equity = (1.0 + daily_returns).cumprod()
     equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
     return equity
+
+
+def calc_short_only_curve(
+    factor: pd.Series,
+    returns: pd.Series,
+    n_groups: int = 5,
+    bottom_k: int = 1,
+) -> pd.Series:
+    """
+    计算仅空组（按因子值最低的 bottom_k 组）等权做空净值曲线 / Calculate short-only equity curve.
+
+    每个截面选取因子值最低的 bottom_k 组，等权做空（收益取反），计算累积净值。
+    At each cross-section, short the bottom_k groups with lowest factor values equally
+    (negate returns), compute cumulative equity curve.
+
+    Parameters / 参数:
+        factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
+        returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns, MultiIndex (timestamp, symbol)
+        n_groups: 分组数量，默认 5 / Number of groups, default 5
+        bottom_k: 做空最低的几组，默认 1 / Number of bottom groups to short, default 1
+
+    Returns / 返回:
+        pd.Series: 净值曲线，index 为 timestamp，起始值为 1.0
+                   Equity curve indexed by timestamp, starting value 1.0
+    """
+    if bottom_k < 1:
+        raise ValueError(f"bottom_k 必须 >= 1，当前值: {bottom_k}")
+    if bottom_k > n_groups:
+        raise ValueError(f"bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})")
+
+    labels = quantile_group(factor, n_groups=n_groups)
+    df = pd.DataFrame({"label": labels, "returns": returns})
+
+    # 最低组标签 / lowest group labels
+    bottom_labels = set(range(bottom_k))
+
+    def _short_return(g: pd.DataFrame) -> float:
+        """截面内 bottom_k 组等权做空收益 / Equal-weighted short return of bottom_k groups in one cross-section."""
+        mask = g["label"].isin(bottom_labels) & g["returns"].notna() & np.isfinite(g["returns"])
+        if mask.sum() == 0:
+            return 0.0
+        # 做空 = 收益取反 / short = negate returns
+        return -g.loc[mask, "returns"].mean()
+
+    daily_returns = df.groupby(level=0).apply(_short_return)
+    # 累积净值 / cumulative equity
+    equity = (1.0 + daily_returns).cumprod()
+    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
+    return equity

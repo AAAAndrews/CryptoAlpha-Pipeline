@@ -3,6 +3,28 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+### [2026-03-31] Task 20 — FactorAnalysis/portfolio.py 仅空组净值曲线 / Short-Only Equity Curve
+
+Implemented `calc_short_only_curve(factor, returns, n_groups=5, bottom_k=1)` in `FactorAnalysis/portfolio.py`:
+
+1. **`calc_short_only_curve(factor, returns, n_groups=5, bottom_k=1)`** — 每个截面选取因子值最低的 bottom_k 组，等权做空（收益取反），计算累积净值曲线。内部调用 `quantile_group` 获取分组标签，按截面 groupby 计算等权平均收益后取反，再 cumprod 得到净值。
+2. 参数校验：`bottom_k < 1` 或 `bottom_k > n_groups` 抛出 `ValueError`。
+3. 全 NaN 因子 → 日收益为 0 → 平坦净值 1.0。
+4. 更新 `__init__.py` 添加 `from .portfolio import calc_short_only_curve`。
+
+**Verification**: 24 checks passed — import OK, __all__ export OK, module-level import OK, shape/type/DatetimeIndex/float dtype, start value 1.0, no NaN/all finite, bottom_k=2/5 variants, ValueError on invalid bottom_k (0 and 6), good factor → positive short curve, all-NaN → flat curve, single-symbol edge case, short != long symmetry check.
+
+**Usage**:
+```python
+from FactorAnalysis import calc_short_only_curve
+
+curve = calc_short_only_curve(factor_series, returns_series, n_groups=5, bottom_k=1)
+# curve: pd.Series indexed by timestamp, starting at 1.0
+# Returns are negated (short selling) for the bottom_k groups
+```
+
+---
+
 ### [2026-03-31] Task 19 — FactorAnalysis/portfolio.py 仅多组净值曲线 / Long-Only Equity Curve
 
 Implemented `calc_long_only_curve(factor, returns, n_groups=5, top_k=1)` in `FactorAnalysis/portfolio.py`:

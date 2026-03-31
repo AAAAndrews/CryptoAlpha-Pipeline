@@ -144,7 +144,7 @@
   {
     "id": 20,
     "task": "实现 FactorAnalysis/portfolio.py：仅空组净值曲线计算",
-    "passes": false,
+    "passes": true,
     "deps": [
       18
     ]
