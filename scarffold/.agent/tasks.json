@@ -114,7 +114,7 @@
   {
     "id": 16,
     "task": "创建 FactorAnalysis 模块结构：__init__.py 包含公共 API 导出",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

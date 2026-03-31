@@ -5,6 +5,31 @@
 
 ---
 
+### [2026-03-31] Task 16 — FactorAnalysis 模块结构 / FactorAnalysis Module Structure
+
+Created `FactorAnalysis/` module directory with 7 files:
+
+1. **`__init__.py`** — module docstring + `__all__` declaring 13 public API exports:
+   - `calc_ic`, `calc_rank_ic`, `calc_icir` — IC 指标
+   - `calc_sharpe`, `calc_calmar`, `calc_sortino` — 绩效比率
+   - `quantile_group` — 分位数分组
+   - `calc_long_only_curve`, `calc_short_only_curve`, `calc_top_bottom_curve` — 净值曲线
+   - `deduct_cost` — 交易成本扣除
+   - `FactorEvaluator` — 编排器主类
+   - `generate_report` — 报告输出
+2. **Stub files** — `metrics.py`, `grouping.py`, `portfolio.py`, `cost.py`, `evaluator.py`, `report.py` (docstring-only, implementations in tasks 17-25)
+
+**Verification**: 4 checks passed — import OK, `__all__` has 13 exports, all expected names present, all submodule files exist.
+
+**Usage**:
+```python
+import FactorAnalysis
+print(FactorAnalysis.__all__)  # 13 public API names
+# Implementations will be added by tasks 17-25
+```
+
+---
+
 ### [2026-03-31] Task 15 — FactorLib 集成验证测试 / FactorLib Integration Tests
 
 Created `scarffold/.agent/test_factorlib_integration.py` with 38 validation checks across 5 areas:
