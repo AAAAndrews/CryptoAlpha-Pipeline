@@ -88,7 +88,7 @@
   {
     "id": 13,
     "task": "在 FactorLib/alpha_volatility.py 中实现 Alpha2 波动率因子，继承 BaseFactor",
-    "passes": false,
+    "passes": true,
     "deps": [
       11
     ]

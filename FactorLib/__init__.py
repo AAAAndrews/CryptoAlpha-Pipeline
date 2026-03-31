@@ -6,6 +6,7 @@ For manually defined factors, decoupled from deap_alpha (GP auto-discovery).
 """
 
 from FactorLib.alpha_momentum import AlphaMomentum
+from FactorLib.alpha_volatility import AlphaVolatility
 from FactorLib.base import BaseFactor
 
-__all__ = ["BaseFactor", "AlphaMomentum"]
+__all__ = ["BaseFactor", "AlphaMomentum", "AlphaVolatility"]

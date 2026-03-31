@@ -5,6 +5,29 @@
 
 ---
 
+### [2026-03-31] Task 13 — Alpha2 波动率因子 / Alpha2 Volatility Factor
+
+Created `FactorLib/alpha_volatility.py` with `AlphaVolatility(BaseFactor)` class:
+
+- Calculates return standard deviation over a configurable `lookback` window per symbol
+- Formula: `close.pct_change().rolling(lookback).std()` via `groupby().transform()`
+- Default `lookback=20`, name auto-updated to reflect parameter
+- Constant price yields zero volatility; all values are non-negative
+- Updated `FactorLib/__init__.py` to export `AlphaVolatility`
+
+**Verification**: 8 checks passed — inheritance, instantiation/repr, default lookback, correct Series shape, NaN count (lookback × symbols), non-negative values, constant-price zero volatility, public export.
+
+**Usage**:
+```python
+from FactorLib.alpha_volatility import AlphaVolatility
+
+factor = AlphaVolatility(lookback=20)
+vol = factor.calculate(data)  # data: DataFrame with timestamp, symbol, close
+# Returns pd.Series of volatility values (high = volatile, low = stable)
+```
+
+---
+
 ### [2026-03-31] Task 12 — Alpha1 动量因子 / Alpha1 Momentum Factor
 
 Created `FactorLib/alpha_momentum.py` with `AlphaMomentum(BaseFactor)` class:
