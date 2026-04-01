@@ -116,7 +116,7 @@
   {
     "id": 20,
     "task": "重构 FactorAnalysis/evaluator.py 为 Tear Sheet 分层模式：拆分为 run_metrics()、run_grouping()、run_curves()、run_turnover()、run_neutralize() 可独立调用，generate_report(select=None) 支持选择性组合，保留 run_all() 执行完整流程",
-    "passes": false,
+    "passes": true,
     "deps": [8, 10, 12, 16, 18]
   },
   {

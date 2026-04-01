@@ -3,6 +3,34 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 15:00] feat: complete task 20 — FactorEvaluator Tear Sheet 分层模式重构
+- 重构 `FactorAnalysis/evaluator.py`，将原有 `run()` 拆分为 5 个独立子方法：
+  - `run_metrics()`: IC/RankIC/ICIR + calc_ic_stats (t_stat, p_value, skew, kurtosis)
+  - `run_grouping()`: 分位数分组标签
+  - `run_curves()`: 净值曲线 + 成本扣除 + Sharpe/Calmar/Sortino (成本前+成本后)
+  - `run_turnover()`: 分组换手率 + 因子排名自相关
+  - `run_neutralize()`: 分组中性化净值曲线 (支持 groups/demeaned/group_adjust/n_groups 参数)
+- 新增实例属性：ic_stats, turnover, rank_autocorr, neutralized_curve
+- `run_all()` 执行完整流程 (metrics → grouping → curves → turnover → neutralize)
+- `run()` 保持向后兼容，等同 `run_all()`
+- `generate_report(select=None)` 支持选择性组合，可选板块: "metrics", "grouping", "curves", "turnover", "neutralize"
+- 新板块报告字段：IC_t_stat, IC_p_value, IC_skew, IC_kurtosis, n_groups_used, avg_turnover, avg_rank_autocorr, neutralized_return
+- `report.py` 保持原有 16 列输出不变，向后兼容
+- 709 项已有测试全部通过，72 项 evaluator 向后兼容测试全部通过，无回归
+- 用法：
+  ```python
+  from FactorAnalysis import FactorEvaluator
+  ev = FactorEvaluator(factor, returns, n_groups=5)
+  # 全部执行
+  ev.run_all()
+  # 或选择性执行
+  ev.run_metrics().run_curves()
+  # 生成报告
+  report = ev.generate_report(select=["metrics", "curves"])
+  # 独立中性化
+  ev.run_neutralize(demeaned=True, group_adjust=True)
+  ```
+
 [2026-04-02 14:00] feat: complete task 19 — 多调仓频率衰减深度验证测试
 - 新增 `tests/test_task19_rebalance_verify.py`，100 项测试全部通过
 - 覆盖范围：返回结构深度验证 (10)、向后兼容性深度验证 (20)、不同频率曲线差异 (9)、

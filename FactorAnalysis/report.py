@@ -1,8 +1,11 @@
 """
 FactorAnalysis/report.py — 绩效报告汇总输出
+Performance report summary output.
 
 生成包含所有关键指标的摘要 DataFrame。
+向后兼容：保持原有列集合不变。
 Generates a summary DataFrame containing all key metrics.
+Backward compatible: preserves original column set.
 """
 
 import pandas as pd
