@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-03 00:30] feat: complete task 16 — 分组中性化净值曲线 (neutralize)
+- 新增 `FactorAnalysis/neutralize.py`，实现 `calc_neutralized_curve(factor, returns, groups, demeaned=True, group_adjust=False)`
+- 支持组内因子去均值（demeaned）和组内收益去均值（group_adjust）两种中性化模式
+- groups 参数支持 int（自动分位数分组）和 pd.Series（自定义分组标签）两种类型
+- 中性化后按处理后的因子值排名，构建 top1-bottom1 多空对冲净值曲线
+- 完整参数校验：类型检查、groups 范围、n_groups 范围
+- 新增 `tests/test_task16_neutralize.py`，35 项测试全部通过
+- 覆盖范围：导入校验 (2)、返回结构与类型 (4)、groups 参数校验 (7)、四种组合模式 (5)、中性化效果 (3)、边界情况 (6)、多种子稳定性 (8)
+- 用法：
+  ```python
+  from FactorAnalysis.neutralize import calc_neutralized_curve
+  # groups=int: 自动分位数分组
+  curve = calc_neutralized_curve(factor, returns, groups=4, demeaned=True)
+  # groups=pd.Series: 自定义分组标签
+  curve = calc_neutralized_curve(factor, returns, groups=industry_labels, demeaned=True, group_adjust=True)
+  # 返回 pd.Series, index=timestamp, 起始值 1.0
+  ```
+
 [2026-04-02 23:30] feat: complete task 15 — 数据质量追踪深度验证测试
 - 新增 `tests/test_task15_data_quality_verify.py`，74 项测试全部通过
 - 覆盖范围：返回结构与类型 (6)、正常覆盖率无告警 (7)、低覆盖率告警 (6)、极低覆盖率异常 (5)、max_loss 参数校验 (13)、输入类型校验 (3)、索引对齐 (4)、inf/NaN 混合无效值 (7)、独立 NaN (3)、边界情况 (7)、覆盖率单调性 (3)

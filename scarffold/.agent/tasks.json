@@ -92,7 +92,7 @@
   {
     "id": 16,
     "task": "创建 FactorAnalysis/neutralize.py：实现 calc_neutralized_curve(factor, returns, groups, demeaned=True, group_adjust=False)，支持组内去均值后再构建多空组合的净值曲线",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
