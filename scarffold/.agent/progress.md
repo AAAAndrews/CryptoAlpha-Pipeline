@@ -3,6 +3,12 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 13:00] feat: complete task 4 — Alpha3 价格振幅因子验证测试
+- 新增 `tests/test_task04_alpha_price_range_verify.py`，24 项测试全部通过
+- 覆盖范围：继承关系 (5)、因子值形状 (4)、计算正确性 (5)、边界情况 (4)、注册表集成 (3)、公共导出 (3)
+- 关键验证点：BaseFactor 抽象类不可实例化、公式 (open-close)/(high-low) 精确计算、high==low 返回 NaN、多交易对混合数据、全局注册表 get/list 正确、FactorLib 包级 __all__ 导出
+- 用法：`python -m pytest tests/test_task04_alpha_price_range_verify.py -v`
+
 [2026-04-02 12:00] feat: complete task 3 — Alpha3 价格振幅因子
 - 新增 `FactorLib/alpha_price_range.py`，AlphaPriceRange 继承 BaseFactor
 - 公式：price_range = (open - close) / (high - low)

@@ -20,7 +20,7 @@
   {
     "id": 4,
     "task": "Alpha3 价格振幅因子验证测试：验证继承、因子值形状、边界情况（high==low → NaN）、注册表集成、公共导出",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {
