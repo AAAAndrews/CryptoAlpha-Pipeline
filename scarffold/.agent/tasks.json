@@ -110,7 +110,7 @@
   {
     "id": 19,
     "task": "多调仓频率衰减验证测试：验证 rebalance_freq=1 与原始行为一致、rebalance_freq=5/10 产出不同曲线、非调仓日收益沿用逻辑、rebalance_freq 参数校验",
-    "passes": false,
+    "passes": true,
     "deps": [18]
   },
   {

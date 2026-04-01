@@ -3,6 +3,16 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 14:00] feat: complete task 19 — 多调仓频率衰减深度验证测试
+- 新增 `tests/test_task19_rebalance_verify.py`，100 项测试全部通过
+- 覆盖范围：返回结构深度验证 (10)、向后兼容性深度验证 (20)、不同频率曲线差异 (9)、
+  收益率衰减特征 (4)、标签沿用逻辑深度验证 (4)、参数校验深度验证 (13)、边界情况 (11)、多种子稳定性 (29)
+- 关键验证点：cumprod 一致性、rebalance_freq=1 与默认值多种子精确匹配（atol=1e-12）、
+  五种频率两两互不相同、大频率曲线收敛（freq=50 ≈ freq=100）、调仓日标签与 quantile_group 完全一致、
+  周期内标签不变、bool 作为 int 子类被接受、None/list 抛出 TypeError、
+  NaN/inf 数据正常、极小数据量（3天）正常、确定性输出（同种子同结果）
+- 用法：`python -m pytest tests/test_task19_rebalance_verify.py -v`
+
 [2026-04-02 13:00] feat: complete task 18 — 多调仓频率衰减 (rebalance_freq)
 - 修改 `FactorAnalysis/portfolio.py`，为三个净值曲线函数新增 `rebalance_freq: int = 1` 参数
 - 新增内部辅助函数 `_calc_labels_with_rebalance(factor, n_groups, rebalance_freq)`
