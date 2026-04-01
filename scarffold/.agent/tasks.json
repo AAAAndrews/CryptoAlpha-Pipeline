@@ -74,7 +74,7 @@
   {
     "id": 13,
     "task": "换手率指标验证测试：验证 calc_turnover 返回类型和值域 [0,1]、calc_rank_autocorr 返回类型和值域 [-1,1]、强/弱因子下的预期行为、边界情况",
-    "passes": false,
+    "passes": true,
     "deps": [12]
   },
   {

@@ -3,6 +3,13 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 22:00] feat: complete task 13 — 换手率指标深度验证测试
+- 新增 `tests/test_task13_turnover_verify.py`，51 项测试全部通过
+- 覆盖范围：返回结构与类型 (8)、值域验证 (6)、稳定因子行为 (5)、振荡因子行为 (2)、弱/随机因子行为 (6)、边界情况 (11)、参数校验 (8)、大数据量 (1)
+- 关键验证点：参数化 n_groups/lag 组合值域正确、多种子稳定性、振荡因子自相关=-1.0 且换手率=1.0、
+  带噪声因子自相关 > 0、变化资产集合正常处理、资产数少于组数退化处理、含 inf 值正常、高 NaN 比例正常
+- 用法：`python -m pytest tests/test_task13_turnover_verify.py -v`
+
 [2026-04-02 21:00] feat: complete task 12 — 分组换手率与因子排名自相关 (turnover)
 - 新增 `FactorAnalysis/turnover.py`，实现 `calc_turnover(factor, n_groups)` 和 `calc_rank_autocorr(factor, lag=1)`
 - calc_turnover: 基于分位数分组，计算相邻截面各分组内成员变动比例，返回 pd.DataFrame（columns=分组标签）
