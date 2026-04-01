@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 19:00] feat: complete task 24 — 端到端投研流程集成测试
+- 新增 `tests/test_task24_e2e_integration.py`，22 项测试全部通过
+- 覆盖范围：close2close 完整流程 (2)、open2open 完整流程 (2)、结构化输出 (6)、
+  CLI 参数解析集成 (4)、多因子端到端 (2)、参数传递 (3)、边界情况 (3)
+- 关键验证点：FactorEvaluator 全部 16 项属性已填充（IC/rank_ic/icir/ic_stats/group_labels/
+  long_curve/short_curve/hedge_curve/hedge_curve_after_cost/sharpe/calmar/sortino/
+  sharpe_after_cost/calmar_after_cost/sortino_after_cost/turnover/rank_autocorr/neutralized_curve）、
+  报告为单行 DataFrame 且无全 NaN 列、IC 序列索引为 DatetimeIndex、hedge_curve 起始值 1.0、
+  三种因子（AlphaMomentum/AlphaVolatility/AlphaPriceRange）均端到端跑通、
+  n_groups/cost_rate/risk_free_rate 正确传递到 evaluator、
+  大数据量 (20 symbols × 500 periods) 和小数据量均正常处理
+- 用法：`python -m pytest tests/test_task24_e2e_integration.py -v`
+
 [2026-04-02 18:30] feat: complete task 23 — 端到端投研编排脚本
 - 新增 `scripts/run_factor_research.py`，实现一键串联完整因子投研流程：
   数据加载 (KlineLoader) → 因子计算 (FactorLib) → 收益率计算 (calc_returns) →
