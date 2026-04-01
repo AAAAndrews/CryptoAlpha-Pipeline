@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 14:00] feat: complete task 5 — T+1 前向收益矩阵计算
+- 新增 `FactorAnalysis/returns.py`，实现 `calc_returns(data, label='close2close')`
+- 支持两种收益率标签：close2close（(next_close/current_close)-1）和 open2open（(next_open/current_open)-1）
+- 输入支持普通 DataFrame（含 timestamp/symbol 列）和已设 MultiIndex 的 DataFrame
+- 输出为 pd.Series，MultiIndex (timestamp, symbol)，每组最后一期为 NaN
+- 包含分母为零保护、参数校验、额外 NaN 告警
+- 新增 `tests/test_task05_returns.py`，22 项测试全部通过
+- 覆盖范围：导入校验 (3)、close2close 正确性 (3)、open2open 正确性 (2)、返回值结构 (5)、多交易对独立性 (2)、边界情况 (7)
+- 用法：
+  ```python
+  from FactorAnalysis.returns import calc_returns
+  returns = calc_returns(data, label='close2close')  # 或 'open2open'
+  # 返回 pd.Series, MultiIndex (timestamp, symbol)
+  ```
+
 [2026-04-02 13:00] feat: complete task 4 — Alpha3 价格振幅因子验证测试
 - 新增 `tests/test_task04_alpha_price_range_verify.py`，24 项测试全部通过
 - 覆盖范围：继承关系 (5)、因子值形状 (4)、计算正确性 (5)、边界情况 (4)、注册表集成 (3)、公共导出 (3)

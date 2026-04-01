@@ -26,7 +26,7 @@
   {
     "id": 5,
     "task": "创建 FactorAnalysis/returns.py：实现 calc_returns(data, label='close2close') 支持 close2close（close.shift(-1)/close-1）和 open2open（open.shift(-1)/open-1）两种 T+1 前向收益，返回 pd.Series with MultiIndex (timestamp, symbol)",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
