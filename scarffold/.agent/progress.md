@@ -3,6 +3,23 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 17:00] feat: complete task 22 — FactorAnalysis 公共导出完整性更新
+- 更新 `FactorAnalysis/__init__.py`，新增 7 个公共导出：
+  calc_ic_stats (metrics), calc_returns (returns), align_factor_returns (alignment),
+  calc_turnover (turnover), calc_rank_autocorr (turnover), calc_neutralized_curve (neutralize),
+  check_data_quality (已有，确认保留)
+- 新增 `tests/test_task22_public_exports.py`，24 项测试全部通过
+- 覆盖范围：7 个新函数导入校验 (7)、__all__ 完整性与数量 (4)、源模块一致性 (7)、已有导出未受影响 (6)
+- 关键验证点：每个新导出函数与其源模块中的原始函数是同一对象（is 恒等），
+  __all__ 列表包含全部 19 个公共 API 名称，已有 12 个导出未受影响
+- 用法：
+  ```python
+  from FactorAnalysis import (
+      calc_ic_stats, calc_returns, align_factor_returns,
+      calc_turnover, calc_rank_autocorr, check_data_quality, calc_neutralized_curve,
+  )
+  ```
+
 [2026-04-02 16:00] feat: complete task 21 — Tear Sheet 分层编排验证测试
 - 重写 `tests/test_task21.py`，158 项测试全部通过
 - 覆盖范围：导入 (2)、run_metrics() 独立调用 (16)、run_grouping() 独立调用 (5)、run_curves() 独立调用 (13)、

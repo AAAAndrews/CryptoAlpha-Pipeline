@@ -128,7 +128,7 @@
   {
     "id": 22,
     "task": "更新 FactorAnalysis/__init__.py：添加所有新增公共导出（calc_ic_stats、calc_returns、align_factor_returns、calc_turnover、calc_rank_autocorr、check_data_quality、calc_neutralized_curve）",
-    "passes": false,
+    "passes": true,
     "deps": [8, 12, 14, 16]
   },
   {
