@@ -2,7 +2,7 @@
   {
     "id": 1,
     "task": "创建通用 K 线数据加载器 Cross_Section_Factor/kline_loader.py：基于 ShortTermDataLoader 扩展，支持参数化过滤（start_time、end_time、symbols、exchange、kline_type、interval），数据验证（格式校验、无缺失值、无重复行、high >= low），全样本加载（不传时间范围/symbols）",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
