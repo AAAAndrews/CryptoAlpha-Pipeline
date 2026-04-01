@@ -32,7 +32,7 @@
   {
     "id": 6,
     "task": "创建 FactorAnalysis/alignment.py：实现 align_factor_returns(factor, returns) 按 (timestamp, symbol) 索引对齐，剔除任一侧为 NaN 的行，产出干净的 (factor_value, forward_return) 配对数据",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 15:00] feat: complete task 6 — 因子值与收益矩阵对齐
+- 新增 `FactorAnalysis/alignment.py`，实现 `align_factor_returns(factor, returns)`
+- 按 (timestamp, symbol) MultiIndex 内连接，仅保留两侧共有的行
+- 剔除因子值或收益率为 NaN / inf 的行，输出无缺失的干净 DataFrame
+- 数据丢失超过 50% 时发出 UserWarning 告警
+- 完整参数校验：类型检查、MultiIndex 检查
+- 新增 `tests/test_task06_alignment.py`，24 项测试全部通过
+- 覆盖范围：导入 (2)、内连接对齐 (3)、NaN/inf 剔除 (5)、输出结构 (4)、告警 (2)、边界情况 (4)、参数校验 (4)
+- 用法：
+  ```python
+  from FactorAnalysis.alignment import align_factor_returns
+  clean = align_factor_returns(factor_values, forward_returns)
+  # 返回 pd.DataFrame, columns=['factor', 'returns'], MultiIndex (timestamp, symbol)
+  ```
+
 [2026-04-02 14:00] feat: complete task 5 — T+1 前向收益矩阵计算
 - 新增 `FactorAnalysis/returns.py`，实现 `calc_returns(data, label='close2close')`
 - 支持两种收益率标签：close2close（(next_close/current_close)-1）和 open2open（(next_open/current_open)-1）
