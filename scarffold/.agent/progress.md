@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 16:00] feat: complete task 21 — Tear Sheet 分层编排验证测试
+- 重写 `tests/test_task21.py`，158 项测试全部通过
+- 覆盖范围：导入 (2)、run_metrics() 独立调用 (16)、run_grouping() 独立调用 (5)、run_curves() 独立调用 (13)、
+  run_turnover() 独立调用 (6)、run_neutralize() 独立调用 (5)、run_neutralize() 自定义参数 (2)、
+  链式调用 (6)、run_all() 完整流程 (17)、run() == run_all() 向后兼容 (16)、
+  generate_report(select=None) 全量报告 (25)、generate_report(select) 选择性报告 (18)、
+  未计算板块填 NaN (3)、无效板块 ValueError (1)、ic_stats 属性正确性 (5)、
+  turnover 属性正确性 (3)、自定义 n_groups run_all (2)、全 NaN 因子边界 (3)、多种子稳定性 (1)、公共导出 (1)
+- 关键验证点：5 个子方法均可独立调用且不影响其他属性、链式调用正确传播 self、
+  run() 与 run_all() 16 项属性逐一精确匹配、generate_report 支持 5 种板块任意组合、
+  无效板块抛出 ValueError、未运行板块不出现在报告中、ic_stats 含 7 个字段、
+  turnover 值域 [0,1]、rank_autocorr 值域 [-1,1]、4 种种子全量报告均有效
+- 用法：`python tests/test_task21.py`
+
 [2026-04-02 15:00] feat: complete task 20 — FactorEvaluator Tear Sheet 分层模式重构
 - 重构 `FactorAnalysis/evaluator.py`，将原有 `run()` 拆分为 5 个独立子方法：
   - `run_metrics()`: IC/RankIC/ICIR + calc_ic_stats (t_stat, p_value, skew, kurtosis)

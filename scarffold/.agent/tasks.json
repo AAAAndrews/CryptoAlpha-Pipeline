@@ -122,7 +122,7 @@
   {
     "id": 21,
     "task": "Tear Sheet 分层编排验证测试：验证各子方法可独立调用、generate_report(select) 选择性执行、run_all() 完整流程、新增属性（ic_stats、turnover、rank_autocorr）正确产出、向后兼容",
-    "passes": false,
+    "passes": true,
     "deps": [20]
   },
   {
