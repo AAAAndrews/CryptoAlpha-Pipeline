@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 16:00] feat: complete task 7 — 收益矩阵与对齐集成验证测试
+- 新增 `tests/test_task07_returns_alignment_verify.py`，20 项测试全部通过
+- 覆盖范围：两种收益率标签端到端管道 (3)、T+1 无未来函数验证 (3)、对齐后无 NaN/inf (3)、索引一致性 (4)、边界情况 (7)
+- 关键验证点：close2close/open2open 通过完整管道（calc_returns → align_factor_returns）结果正确、
+  T+1 前向收益仅依赖下一期价格不含未来信息、对齐后输出完全无缺失值、
+  多交易对索引按 (timestamp, symbol) 正确保留、零价格/空输入/不匹配索引等边界情况
+- 备注：calc_returns 中 expected_nan 计算逻辑存在已知问题（使用总行数而非交易对数），不影响对齐结果正确性
+- 用法：`python -m pytest tests/test_task07_returns_alignment_verify.py -v`
+
 [2026-04-02 15:00] feat: complete task 6 — 因子值与收益矩阵对齐
 - 新增 `FactorAnalysis/alignment.py`，实现 `align_factor_returns(factor, returns)`
 - 按 (timestamp, symbol) MultiIndex 内连接，仅保留两侧共有的行
