@@ -1,0 +1,220 @@
+[
+  {
+    "id": 1,
+    "task": "创建重试工具模块 CryptoDataProviders/utils/retry.py，带有指数退避装饰器",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 2,
+    "task": "在 market_api.py 中用 retry.py 的重试装饰器包装 binance_fetch_klines",
+    "passes": true,
+    "deps": [
+      1
+    ]
+  },
+  {
+    "id": 3,
+    "task": "将重试逻辑集成到 db_manager.py 的 run_binance_rest_updater 中，实现单个交易对的错误恢复",
+    "passes": true,
+    "deps": [
+      1
+    ]
+  },
+  {
+    "id": 4,
+    "task": "创建活跃交易对校验工具：获取活跃交易对并与本地数据库交易对列表对比",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 5,
+    "task": "将活跃交易对过滤器集成到 update_api.py 中：在拉取前跳过已下架的交易对",
+    "passes": true,
+    "deps": [
+      4
+    ]
+  },
+  {
+    "id": 6,
+    "task": "数据管道端到端验证测试：验证 retry 装饰器导入与行为、活跃交易对校验返回正确类型与子集关系、update_api.py 完整导入链畅通、db_manager 重试包装正确",
+    "passes": true,
+    "deps": [
+      5
+    ]
+  },
+  {
+    "id": 7,
+    "task": "创建统一管道脚本 scripts/pipeline.py：按顺序执行 update_bulk 然后 cleanup",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 8,
+    "task": "为 scripts/pipeline.py 添加管道摘要日志：统计更新的交易对数量、清理的交易对数量、错误数量",
+    "passes": true,
+    "deps": [
+      7
+    ]
+  },
+  {
+    "id": 9,
+    "task": "创建短期数据加载器：使用 CryptoDB_feather 读取器加载所有交易对在短期时间窗口内的数据",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 10,
+    "task": "编写短期数据加载器的验证测试：验证正确的数据形状和没有缺失数据",
+    "passes": true,
+    "deps": [
+      9
+    ]
+  },
+  {
+    "id": 11,
+    "task": "创建 FactorLib/base.py：BaseFactor 抽象基类，带有抽象的 calculate(data) 方法和文档字符串约定",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 12,
+    "task": "在 FactorLib/alpha_momentum.py 中实现 Alpha1 动量因子，继承 BaseFactor",
+    "passes": true,
+    "deps": [
+      11
+    ]
+  },
+  {
+    "id": 13,
+    "task": "在 FactorLib/alpha_volatility.py 中实现 Alpha2 波动率因子，继承 BaseFactor",
+    "passes": true,
+    "deps": [
+      11
+    ]
+  },
+  {
+    "id": 14,
+    "task": "创建 FactorLib/registry.py：因子注册表，用于注册和列出可用的因子",
+    "passes": true,
+    "deps": [
+      11
+    ]
+  },
+  {
+    "id": 15,
+    "task": "FactorLib 集成验证测试：验证 BaseFactor 抽象类不可实例化、Alpha1/Alpha2 正确继承并产出预期形状的 Series、registry 注册/列出/获取因子功能正常、__init__.py 公共导出完整",
+    "passes": true,
+    "deps": [
+      12,
+      13,
+      14
+    ]
+  },
+  {
+    "id": 16,
+    "task": "创建 FactorAnalysis 模块结构：__init__.py 包含公共 API 导出",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 17,
+    "task": "实现 FactorAnalysis/metrics.py：使用 pandas 实现 IC、RankIC、ICIR（重构自 deap_alpha 的 numpy 版本）",
+    "passes": true,
+    "deps": [
+      16
+    ]
+  },
+  {
+    "id": 18,
+    "task": "实现 FactorAnalysis/grouping.py：分位数分组分割，可调节分组数量",
+    "passes": true,
+    "deps": [
+      16
+    ]
+  },
+  {
+    "id": 19,
+    "task": "实现 FactorAnalysis/portfolio.py：仅多组净值曲线计算",
+    "passes": true,
+    "deps": [
+      18
+    ]
+  },
+  {
+    "id": 20,
+    "task": "实现 FactorAnalysis/portfolio.py：仅空组净值曲线计算",
+    "passes": true,
+    "deps": [
+      18
+    ]
+  },
+  {
+    "id": 21,
+    "task": "实现 FactorAnalysis/portfolio.py：top-N 多头减去 bottom-N 空头组合净值",
+    "passes": true,
+    "deps": [
+      18
+    ]
+  },
+  {
+    "id": 22,
+    "task": "实现 FactorAnalysis/cost.py：按比例滑差的交易成本向量化扣除",
+    "passes": true,
+    "deps": [
+      18
+    ]
+  },
+  {
+    "id": 23,
+    "task": "在 FactorAnalysis/metrics.py 中实现 Sharpe/Calmar/Sortino 比率计算",
+    "passes": true,
+    "deps": [
+      17
+    ]
+  },
+  {
+    "id": 24,
+    "task": "创建 FactorAnalysis/evaluator.py：FactorEvaluator 类，编排所有分析步骤",
+    "passes": true,
+    "deps": [
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  {
+    "id": 25,
+    "task": "创建 FactorAnalysis/report.py：生成包含所有关键指标的摘要报告 DataFrame",
+    "passes": true,
+    "deps": [
+      24
+    ]
+  },
+  {
+    "id": 26,
+    "task": "FactorAnalysis 端到端验证测试：使用合成数据验证 FactorEvaluator 全流程——IC/RankIC/ICIR 数值合理性、分组收益单调性、净值曲线无 NaN、交易成本扣除后收益下降、report 输出 DataFrame 包含所有关键列",
+    "passes": true,
+    "deps": [
+      25
+    ]
+  },
+  {
+    "id": 27,
+    "task": "生成根目录的 requirements.txt，包含所有项目依赖",
+    "passes": true,
+    "deps": []
+  },
+  {
+    "id": 28,
+    "task": "项目级冒烟测试：验证 requirements.txt 可安装无冲突、所有模块（CryptoDataProviders/CryptoDB_feather/FactorLib/FactorAnalysis/scripts）导入正常、运行 pipeline --dry-run 或等效空跑不报错",
+    "passes": true,
+    "deps": [
+      27
+    ]
+  }
+]
