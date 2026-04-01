@@ -3,6 +3,14 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 20:00] feat: complete task 11 — 零值感知分组验证测试 (zero_aware)
+- 新增 `tests/test_task11_zero_aware_grouping_verify.py`，24 项测试全部通过
+- 覆盖范围：向后兼容性 (2)、基本功能 (5)、分组比例分配 (3)、边界情况 (9)、多截面一致性 (3)、输出结构 (2)
+- 关键验证点：zero_aware=False 与默认参数结果一致、标签范围 [0, n_groups-1]、负值标签 < 正值标签、
+  零值归入负值侧、全正/全负/全零退化为标准分组、NaN 保留、n_groups<2 抛出 ValueError、
+  多截面独立分组、大数据量正常工作、非 NaN 标签数等于有效因子值数
+- 用法：`python -m pytest tests/test_task11_zero_aware_grouping_verify.py -v`
+
 [2026-04-02 19:00] feat: complete task 10 — quantile_group zero_aware 零值感知分组
 - 修改 `FactorAnalysis/grouping.py`，为 `quantile_group` 新增 `zero_aware: bool = False` 参数
 - zero_aware=True 时按正负拆分后各自做分位数分组：负值（含零）获得较低标签，正值获得较高标签

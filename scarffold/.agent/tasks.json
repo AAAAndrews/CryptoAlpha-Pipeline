@@ -62,7 +62,7 @@
   {
     "id": 11,
     "task": "零值感知分组验证测试：验证 zero_aware=True 时正负值分别分组、标签范围正确、zero_aware=False 时行为不变、全正/全负/含零边界情况",
-    "passes": false,
+    "passes": true,
     "deps": [10]
   },
   {
