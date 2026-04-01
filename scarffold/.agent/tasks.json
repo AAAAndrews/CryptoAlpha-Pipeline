@@ -146,7 +146,7 @@
   {
     "id": 25,
     "task": "项目级集成冒烟测试：验证所有新旧模块导入正常、新增函数公共导出完整、FactorEvaluator 新功能可运行、端到端脚本可执行",
-    "passes": false,
+    "passes": true,
     "deps": [21, 22, 24]
   }
 ]

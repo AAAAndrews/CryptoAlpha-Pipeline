@@ -3,6 +3,17 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 20:00] feat: complete task 25 — 项目级集成冒烟测试
+- 新增 `tests/test_task25_project_smoke.py`，122 项测试全部通过
+- 覆盖范围：旧模块导入 (40)、新增函数公共导出完整性 (22)、FactorEvaluator 新功能可运行 (32)、端到端脚本可执行 (10)、新增子模块直接导入 (18)
+- 关键验证点：
+  - 旧模块：CryptoDataProviders/CryptoDB_feather/FactorLib/FactorAnalysis/Cross_Section_Factor/scripts 全部导入正常
+  - 新导出：7 个新函数（calc_ic_stats/calc_returns/align_factor_returns/calc_turnover/calc_rank_autocorr/check_data_quality/calc_neutralized_curve）+ AlphaPriceRange 全部在 __all__ 中且可导入
+  - FactorEvaluator：5 个分层子方法可独立调用、4 个新属性（ic_stats/turnover/rank_autocorr/neutralized_curve）类型正确、run_all() 填充全部 18 项属性、generate_report(select) 选择性报告正常、run() 向后兼容
+  - 端到端脚本：run_factor_research.py --help 可执行、pipeline --dry-run 空跑通过
+  - 子模块直接导入：7 个新增子模块全部可导入且函数可访问
+- 用法：`python tests/test_task25_project_smoke.py`
+
 [2026-04-02 19:00] feat: complete task 24 — 端到端投研流程集成测试
 - 新增 `tests/test_task24_e2e_integration.py`，22 项测试全部通过
 - 覆盖范围：close2close 完整流程 (2)、open2open 完整流程 (2)、结构化输出 (6)、
