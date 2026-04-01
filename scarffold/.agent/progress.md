@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 17:00] feat: complete task 8 — calc_ic_stats IC 统计显著性指标
+- 新增 `FactorAnalysis/metrics.py` 中的 `calc_ic_stats(factor, returns)` 函数
+- 返回 pd.Series 包含 7 个字段：IC_mean, IC_std, ICIR, t_stat, p_value, IC_skew, IC_kurtosis
+- 复用已有的 `calc_ic()` 计算日频 Pearson IC 序列，再用 scipy.stats 进行 t 检验和分布统计
+- 参数校验：类型检查、空数据检查；数据不足（<3 个有效 IC）时返回全 NaN 并发出 UserWarning
+- 新增 `tests/test_task08_calc_ic_stats.py`，22 项测试全部通过
+- 覆盖范围：导入与基础检查 (3)、强因子统计合理性 (5)、弱因子统计合理性 (2)、ICIR 计算 (2)、分布统计 (3)、边界情况 (7)
+- 用法：
+  ```python
+  from FactorAnalysis.metrics import calc_ic_stats
+  stats = calc_ic_stats(factor_values, forward_returns)
+  # 返回 pd.Series: IC_mean, IC_std, ICIR, t_stat, p_value, IC_skew, IC_kurtosis
+  ```
+
 [2026-04-02 16:00] feat: complete task 7 — 收益矩阵与对齐集成验证测试
 - 新增 `tests/test_task07_returns_alignment_verify.py`，20 项测试全部通过
 - 覆盖范围：两种收益率标签端到端管道 (3)、T+1 无未来函数验证 (3)、对齐后无 NaN/inf (3)、索引一致性 (4)、边界情况 (7)

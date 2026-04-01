@@ -44,7 +44,7 @@
   {
     "id": 8,
     "task": "在 FactorAnalysis/metrics.py 中新增 calc_ic_stats(factor, returns)：返回包含 IC_mean、IC_std、ICIR、t_stat、p_value、IC_skew、IC_kurtosis 的 pd.Series，使用 scipy.stats 进行 t 检验和分布统计",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

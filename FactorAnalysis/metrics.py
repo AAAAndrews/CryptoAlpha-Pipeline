@@ -6,8 +6,11 @@ FactorAnalysis/metrics.py — IC/RankIC/ICIR 与 Sharpe/Calmar/Sortino 指标计
 Refactored from deap_alpha numpy versions, using DataFrame groupby + vectorized ops.
 """
 
+import warnings
+
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 
 def calc_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:
@@ -194,3 +197,80 @@ def calc_sortino(equity: pd.Series, risk_free_rate: float = 0.0, periods_per_yea
     if downside_dev == 0:
         return 0.0
     return (excess.mean() / downside_dev) * np.sqrt(periods_per_year)
+
+
+def calc_ic_stats(factor: pd.Series, returns: pd.Series) -> pd.Series:
+    """
+    计算 IC 统计显著性指标 / Calculate IC statistical significance metrics.
+
+    基于日频 Pearson IC 序列，计算均值、标准差、ICIR、t 检验、偏度、峰度等统计量，
+    衡量因子预测能力的显著性和分布特征。
+    Compute mean, std, ICIR, t-test, skewness, kurtosis from daily Pearson IC series,
+    measuring significance and distribution of factor predictive power.
+
+    Parameters / 参数:
+        factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
+        returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns, MultiIndex (timestamp, symbol)
+
+    Returns / 返回:
+        pd.Series: 包含以下字段的统计指标 / Statistics with the following fields:
+            - IC_mean: IC 均值 / IC mean
+            - IC_std: IC 标准差 / IC standard deviation
+            - ICIR: IC 信息比率 (IC_mean / IC_std) / IC information ratio
+            - t_stat: t 统计量，检验 IC 均值是否显著不为零 / t-statistic for IC mean != 0
+            - p_value: t 检验 p 值 / t-test p-value
+            - IC_skew: IC 序列偏度 / IC series skewness
+            - IC_kurtosis: IC 序列峰度 / IC series kurtosis
+    """
+    # 参数校验 / parameter validation
+    if not isinstance(factor, pd.Series):
+        raise TypeError(f"factor must be pd.Series, got {type(factor).__name__}")
+    if not isinstance(returns, pd.Series):
+        raise TypeError(f"returns must be pd.Series, got {type(returns).__name__}")
+    if len(factor) == 0 or len(returns) == 0:
+        raise ValueError("factor and returns must not be empty")
+
+    # 计算日频 IC / compute daily IC
+    ic_series = calc_ic(factor, returns)
+    ic_valid = ic_series.dropna()
+
+    # 数据不足时返回全 NaN 并发出警告 / return all-NaN with warning if insufficient data
+    if len(ic_valid) < 3:
+        warnings.warn(
+            f"IC series has only {len(ic_valid)} valid observations (need >= 3), "
+            "returning NaN stats",
+            UserWarning,
+        )
+        return pd.Series({
+            "IC_mean": np.nan,
+            "IC_std": np.nan,
+            "ICIR": np.nan,
+            "t_stat": np.nan,
+            "p_value": np.nan,
+            "IC_skew": np.nan,
+            "IC_kurtosis": np.nan,
+        })
+
+    # 核心统计量 / core statistics
+    ic_mean = float(ic_valid.mean())
+    ic_std = float(ic_valid.std(ddof=1))
+
+    # ICIR: 均值 / 标准差 / ICIR: mean / std
+    icir = ic_mean / ic_std if ic_std != 0 else np.nan
+
+    # t 检验：IC 均值是否显著不为零 / t-test: is IC mean significantly non-zero
+    t_stat, p_value = stats.ttest_1samp(ic_valid.values, 0.0)
+
+    # 分布统计 / distribution statistics
+    ic_skew = float(stats.skew(ic_valid.values, bias=False))
+    ic_kurtosis = float(stats.kurtosis(ic_valid.values, bias=False))
+
+    return pd.Series({
+        "IC_mean": ic_mean,
+        "IC_std": ic_std,
+        "ICIR": icir,
+        "t_stat": float(t_stat),
+        "p_value": float(p_value),
+        "IC_skew": ic_skew,
+        "IC_kurtosis": ic_kurtosis,
+    })
