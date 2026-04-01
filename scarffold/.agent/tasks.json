@@ -98,7 +98,7 @@
   {
     "id": 17,
     "task": "分组中性化权重验证测试：验证 demeaned/group_adjust 四种组合模式、groups 参数类型校验、中性化后净值曲线类型和起始值、与原始曲线对比差异",
-    "passes": false,
+    "passes": true,
     "deps": [16]
   },
   {

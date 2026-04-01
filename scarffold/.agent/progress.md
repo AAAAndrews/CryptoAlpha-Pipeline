@@ -3,6 +3,13 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 12:30] feat: complete task 17 — 分组中性化权重深度验证测试
+- 新增 `tests/test_task17_neutralize_verify.py`，63 项测试全部通过
+- 覆盖范围：返回结构与类型 (7)、groups 参数类型校验 (11)、四种组合模式 (9)、中性化效果 (3)、与原始曲线对比 (3)、边界情况 (12)、多种子稳定性 (18)
+- 关键验证点：cumprod 一致性验证、datetime 索引类型、 demeaned 确实减小组内因子方差、group_adjust 确实减小组内收益方差、
+  四种模式两两互不相同、双重中性化不同于单一模式、含 NaN/inf 数据正常、相同种子确定性输出、8 种子×4 模式全部通过
+- 用法：`python -m pytest tests/test_task17_neutralize_verify.py -v`
+
 [2026-04-03 00:30] feat: complete task 16 — 分组中性化净值曲线 (neutralize)
 - 新增 `FactorAnalysis/neutralize.py`，实现 `calc_neutralized_curve(factor, returns, groups, demeaned=True, group_adjust=False)`
 - 支持组内因子去均值（demeaned）和组内收益去均值（group_adjust）两种中性化模式
