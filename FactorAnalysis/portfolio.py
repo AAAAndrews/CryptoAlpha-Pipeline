@@ -11,11 +11,51 @@ import pandas as pd
 from .grouping import quantile_group
 
 
+def _calc_labels_with_rebalance(
+    factor: pd.Series,
+    n_groups: int,
+    rebalance_freq: int,
+) -> pd.Series:
+    """
+    计算带调仓频率的分组标签 / Calculate group labels with rebalance frequency.
+
+    rebalance_freq=1 时每日调仓，rebalance_freq=N 时每 N 日调仓一次，
+    非调仓日沿用上一个调仓日的分组结果。
+
+    When rebalance_freq=1, rebalance daily. When rebalance_freq=N,
+    rebalance every N days, carrying forward labels from the last rebalance date.
+    """
+    if rebalance_freq <= 1:
+        return quantile_group(factor, n_groups=n_groups)
+
+    # 按时间排序的唯一截面日期 / Unique timestamps sorted
+    timestamps = factor.index.get_level_values(0).unique().sort_values()
+    # 调仓日：每隔 rebalance_freq 个截面取一个 / Rebalance dates: every N-th timestamp
+    rebalance_dates = timestamps[::rebalance_freq]
+
+    # 仅在调仓日计算分组标签 / Compute labels only at rebalance dates
+    reb_mask = factor.index.get_level_values(0).isin(rebalance_dates)
+    reb_labels = quantile_group(factor[reb_mask], n_groups=n_groups)
+
+    # 构建完整标签序列，初始全 NaN / Build full label series, initially all NaN
+    all_labels = pd.Series(np.nan, index=factor.index, dtype=float)
+
+    # 填入调仓日标签 / Fill in labels at rebalance dates
+    all_labels.loc[reb_labels.index] = reb_labels
+
+    # 按资产维度前向填充：非调仓日沿用上一个调仓日的标签
+    # Forward-fill per symbol: non-rebalance days carry forward last rebalance labels
+    labels_df = all_labels.unstack(level=1)
+    labels_df = labels_df.ffill()
+    return labels_df.stack()
+
+
 def calc_long_only_curve(
     factor: pd.Series,
     returns: pd.Series,
     n_groups: int = 5,
     top_k: int = 1,
+    rebalance_freq: int = 1,
 ) -> pd.Series:
     """
     计算仅多组（按因子值最高的 top_k 组）等权净值曲线 / Calculate long-only equity curve.
@@ -29,17 +69,22 @@ def calc_long_only_curve(
         returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns, MultiIndex (timestamp, symbol)
         n_groups: 分组数量，默认 5 / Number of groups, default 5
         top_k: 持有最高的几组，默认 1 / Number of top groups to hold, default 1
+        rebalance_freq: 调仓频率（每 N 个截面调仓一次），默认 1 / Rebalance every N cross-sections, default 1
 
     Returns / 返回:
         pd.Series: 净值曲线，index 为 timestamp，起始值为 1.0
                    Equity curve indexed by timestamp, starting value 1.0
     """
+    if not isinstance(rebalance_freq, int):
+        raise TypeError(f"rebalance_freq 必须为整数，当前类型: {type(rebalance_freq).__name__}")
+    if rebalance_freq < 1:
+        raise ValueError(f"rebalance_freq 必须 >= 1，当前值: {rebalance_freq}")
     if top_k < 1:
         raise ValueError(f"top_k 必须 >= 1，当前值: {top_k}")
     if top_k > n_groups:
         raise ValueError(f"top_k ({top_k}) 不能超过 n_groups ({n_groups})")
 
-    labels = quantile_group(factor, n_groups=n_groups)
+    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq)
     df = pd.DataFrame({"label": labels, "returns": returns})
 
     # 最高组标签 / highest group label
@@ -64,6 +109,7 @@ def calc_short_only_curve(
     returns: pd.Series,
     n_groups: int = 5,
     bottom_k: int = 1,
+    rebalance_freq: int = 1,
 ) -> pd.Series:
     """
     计算仅空组（按因子值最低的 bottom_k 组）等权做空净值曲线 / Calculate short-only equity curve.
@@ -77,17 +123,22 @@ def calc_short_only_curve(
         returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns, MultiIndex (timestamp, symbol)
         n_groups: 分组数量，默认 5 / Number of groups, default 5
         bottom_k: 做空最低的几组，默认 1 / Number of bottom groups to short, default 1
+        rebalance_freq: 调仓频率（每 N 个截面调仓一次），默认 1 / Rebalance every N cross-sections, default 1
 
     Returns / 返回:
         pd.Series: 净值曲线，index 为 timestamp，起始值为 1.0
                    Equity curve indexed by timestamp, starting value 1.0
     """
+    if not isinstance(rebalance_freq, int):
+        raise TypeError(f"rebalance_freq 必须为整数，当前类型: {type(rebalance_freq).__name__}")
+    if rebalance_freq < 1:
+        raise ValueError(f"rebalance_freq 必须 >= 1，当前值: {rebalance_freq}")
     if bottom_k < 1:
         raise ValueError(f"bottom_k 必须 >= 1，当前值: {bottom_k}")
     if bottom_k > n_groups:
         raise ValueError(f"bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})")
 
-    labels = quantile_group(factor, n_groups=n_groups)
+    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq)
     df = pd.DataFrame({"label": labels, "returns": returns})
 
     # 最低组标签 / lowest group labels
@@ -114,6 +165,7 @@ def calc_top_bottom_curve(
     n_groups: int = 5,
     top_k: int = 1,
     bottom_k: int = 1,
+    rebalance_freq: int = 1,
 ) -> pd.Series:
     """
     计算多空对冲组合净值曲线：做多 top_k 组 - 做空 bottom_k 组 / Calculate long-short hedged equity curve.
@@ -129,11 +181,16 @@ def calc_top_bottom_curve(
         n_groups: 分组数量，默认 5 / Number of groups, default 5
         top_k: 做多最高的几组，默认 1 / Number of top groups to long, default 1
         bottom_k: 做空最低的几组，默认 1 / Number of bottom groups to short, default 1
+        rebalance_freq: 调仓频率（每 N 个截面调仓一次），默认 1 / Rebalance every N cross-sections, default 1
 
     Returns / 返回:
         pd.Series: 净值曲线，index 为 timestamp，起始值为 1.0
                    Equity curve indexed by timestamp, starting value 1.0
     """
+    if not isinstance(rebalance_freq, int):
+        raise TypeError(f"rebalance_freq 必须为整数，当前类型: {type(rebalance_freq).__name__}")
+    if rebalance_freq < 1:
+        raise ValueError(f"rebalance_freq 必须 >= 1，当前值: {rebalance_freq}")
     if top_k < 1:
         raise ValueError(f"top_k 必须 >= 1，当前值: {top_k}")
     if bottom_k < 1:
@@ -143,7 +200,7 @@ def calc_top_bottom_curve(
             f"top_k ({top_k}) + bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})"
         )
 
-    labels = quantile_group(factor, n_groups=n_groups)
+    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq)
     df = pd.DataFrame({"label": labels, "returns": returns})
 
     top_labels = set(range(n_groups - top_k, n_groups))

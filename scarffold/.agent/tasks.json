@@ -104,7 +104,7 @@
   {
     "id": 18,
     "task": "在 FactorAnalysis/portfolio.py 的三个净值曲线函数中新增 rebalance_freq: int = 1 参数：非调仓日沿用上一个调仓日的分组结果计算当日收益",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

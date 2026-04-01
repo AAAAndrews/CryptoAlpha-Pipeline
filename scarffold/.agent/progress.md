@@ -3,6 +3,27 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 13:00] feat: complete task 18 — 多调仓频率衰减 (rebalance_freq)
+- 修改 `FactorAnalysis/portfolio.py`，为三个净值曲线函数新增 `rebalance_freq: int = 1` 参数
+- 新增内部辅助函数 `_calc_labels_with_rebalance(factor, n_groups, rebalance_freq)`
+- 实现逻辑：rebalance_freq=1 时行为不变（每日调仓），rebalance_freq=N 时每 N 个截面调仓一次
+- 非调仓日通过 unstack → ffill → stack 按资产维度前向填充上一个调仓日的分组标签
+- 完整参数校验：TypeError（非整数）、ValueError（< 1）
+- 新增 `tests/test_task18_rebalance.py`，68 项测试全部通过
+- 覆盖范围：导入校验 (4)、返回结构与类型 (6)、向后兼容性 (3)、参数校验 (12)、不同频率产出不同曲线 (10)、标签沿用逻辑 (3)、边界情况 (9)、多种子稳定性 (21)
+- 关键验证点：rebalance_freq=1 与原始行为精确一致（atol=1e-12）、freq=5/10 曲线显著不同、
+  标签前向填充逐资产逐日验证、rebalance_freq > 时间戳数退化处理、常量因子/纯噪声正常
+- 用法：
+  ```python
+  from FactorAnalysis.portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
+  # 默认每日调仓（向后兼容）
+  curve = calc_long_only_curve(factor, returns, n_groups=5, top_k=1)
+  # 每 5 日调仓一次
+  curve = calc_long_only_curve(factor, returns, n_groups=5, top_k=1, rebalance_freq=5)
+  # 多空对冲同样支持
+  curve = calc_top_bottom_curve(factor, returns, n_groups=5, rebalance_freq=10)
+  ```
+
 [2026-04-02 12:30] feat: complete task 17 — 分组中性化权重深度验证测试
 - 新增 `tests/test_task17_neutralize_verify.py`，63 项测试全部通过
 - 覆盖范围：返回结构与类型 (7)、groups 参数类型校验 (11)、四种组合模式 (9)、中性化效果 (3)、与原始曲线对比 (3)、边界情况 (12)、多种子稳定性 (18)
