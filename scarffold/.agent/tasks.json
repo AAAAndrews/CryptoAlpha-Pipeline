@@ -56,7 +56,7 @@
   {
     "id": 10,
     "task": "在 FactorAnalysis/grouping.py 的 quantile_group 中新增 zero_aware: bool = False 参数：当 True 时按正负拆分后各自做分位数分组，最终标签 0 到 n_groups-1",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

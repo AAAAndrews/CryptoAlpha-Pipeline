@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 19:00] feat: complete task 10 — quantile_group zero_aware 零值感知分组
+- 修改 `FactorAnalysis/grouping.py`，为 `quantile_group` 新增 `zero_aware: bool = False` 参数
+- zero_aware=True 时按正负拆分后各自做分位数分组：负值（含零）获得较低标签，正值获得较高标签
+- 按两侧样本量比例分配分组数（`round(n_groups * n_neg / total)`），每侧至少 1 组
+- 某一侧为空时自动退化为标准分组；保持与原有 `duplicates='drop'` 和异常处理一致
+- 21 项已有测试全部通过，无回归
+- 用法：
+  ```python
+  from FactorAnalysis.grouping import quantile_group
+  labels = quantile_group(factor, n_groups=5, zero_aware=True)
+  # 负值标签 < 正值标签，标签范围 [0, n_groups-1]
+  ```
+
 [2026-04-02 18:00] feat: complete task 9 — calc_ic_stats IC 统计显著性深度验证测试
 - 新增 `tests/test_task09_ic_stats_verify.py`，52 项测试全部通过
 - 覆盖范围：返回类型与字段完整性 (5)、强因子 t_stat/p_value 合理性 (18)、弱因子统计合理性 (9)、负相关因子 (4)、skew/kurtosis 分布统计 (5)、边界情况 (11)
