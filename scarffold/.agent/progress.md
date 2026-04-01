@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 18:00] feat: complete task 9 — calc_ic_stats IC 统计显著性深度验证测试
+- 新增 `tests/test_task09_ic_stats_verify.py`，52 项测试全部通过
+- 覆盖范围：返回类型与字段完整性 (5)、强因子 t_stat/p_value 合理性 (18)、弱因子统计合理性 (9)、负相关因子 (4)、skew/kurtosis 分布统计 (5)、边界情况 (11)
+- 关键验证点：多种子参数化强因子（0.3/0.5/0.7）下 IC_mean/t_stat/p_value/ICIR 均合理、
+  t_stat 手动计算与 scipy 输出一致（IC_mean / (IC_std / sqrt(n))）、
+  弱因子（0.01/0.02/0.03）下 p_value 不显著、负相关因子各项指标符号正确、
+  多种子（10 seeds）下 skew/kurtosis 稳定性、NaN 数据/常量因子/单交易对等边界情况
+- 用法：`python -m pytest tests/test_task09_ic_stats_verify.py -v`
+
 [2026-04-02 17:00] feat: complete task 8 — calc_ic_stats IC 统计显著性指标
 - 新增 `FactorAnalysis/metrics.py` 中的 `calc_ic_stats(factor, returns)` 函数
 - 返回 pd.Series 包含 7 个字段：IC_mean, IC_std, ICIR, t_stat, p_value, IC_skew, IC_kurtosis

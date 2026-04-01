@@ -50,7 +50,7 @@
   {
     "id": 9,
     "task": "IC 统计显著性验证测试：验证 calc_ic_stats 返回类型和字段完整性、t_stat/p_value 在强/弱因子下的合理性、skew/kurtosis 数值范围、边界情况",
-    "passes": false,
+    "passes": true,
     "deps": [8]
   },
   {
