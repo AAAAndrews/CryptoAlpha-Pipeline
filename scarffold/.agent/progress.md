@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 21:00] feat: complete task 12 — 分组换手率与因子排名自相关 (turnover)
+- 新增 `FactorAnalysis/turnover.py`，实现 `calc_turnover(factor, n_groups)` 和 `calc_rank_autocorr(factor, lag=1)`
+- calc_turnover: 基于分位数分组，计算相邻截面各分组内成员变动比例，返回 pd.DataFrame（columns=分组标签）
+- calc_rank_autocorr: 对横截面排名计算 Pearson 自相关，衡量因子排名持续性，返回 pd.Series
+- 新增 `tests/test_task12_turnover.py`，23 项测试全部通过
+- 覆盖范围：导入 (2)、calc_turnover 基础功能 (5)、calc_rank_autocorr 基础功能 (5)、强/弱因子行为 (2)、边界情况 (9)
+- 关键验证点：稳定因子换手率=0、稳定因子自相关=1.0、振荡因子自相关=-1.0、首期 NaN、值域正确、参数校验
+- 用法：
+  ```python
+  from FactorAnalysis.turnover import calc_turnover, calc_rank_autocorr
+  turnover_df = calc_turnover(factor, n_groups=5)  # pd.DataFrame, columns=0~4
+  autocorr = calc_rank_autocorr(factor, lag=1)     # pd.Series, index=timestamp
+  ```
+
 [2026-04-02 20:00] feat: complete task 11 — 零值感知分组验证测试 (zero_aware)
 - 新增 `tests/test_task11_zero_aware_grouping_verify.py`，24 项测试全部通过
 - 覆盖范围：向后兼容性 (2)、基本功能 (5)、分组比例分配 (3)、边界情况 (9)、多截面一致性 (3)、输出结构 (2)

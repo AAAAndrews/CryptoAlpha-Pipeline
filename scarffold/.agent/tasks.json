@@ -68,7 +68,7 @@
   {
     "id": 12,
     "task": "创建 FactorAnalysis/turnover.py：实现 calc_turnover(factor, n_groups) 分组换手率和 calc_rank_autocorr(factor) 因子排名自相关系数",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
