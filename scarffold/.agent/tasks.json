@@ -14,7 +14,7 @@
   {
     "id": 3,
     "task": "创建 FactorLib/alpha_price_range.py：实现 Alpha3 价格振幅因子 (open-close)/(high-low)，继承 BaseFactor，处理 high==low 边界，注册到 registry",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

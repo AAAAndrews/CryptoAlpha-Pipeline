@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 12:00] feat: complete task 3 — Alpha3 价格振幅因子
+- 新增 `FactorLib/alpha_price_range.py`，AlphaPriceRange 继承 BaseFactor
+- 公式：price_range = (open - close) / (high - low)
+- high == low 时返回 NaN（分母为零保护）
+- 使用 numpy.where 向量化计算，避免逐行循环
+- 已注册到全局因子注册表（FactorLib.__init__ 中调用 register）
+- 同时将 AlphaMomentum、AlphaVolatility 一并注册到 registry
+- 4 项验证全部通过：基础计算、边界情况、继承关系、注册表集成
+- 用法：
+  ```python
+  from FactorLib.alpha_price_range import AlphaPriceRange
+  factor = AlphaPriceRange()
+  result = factor.calculate(data)  # data 需包含 open, high, low, close 列
+  ```
+
 [2026-04-02 00:10] feat: complete task 2 — KlineLoader 通用 K 线数据加载器验证测试
 - 新增 `tests/test_task02_kline_loader_verify.py`，47 项测试全部通过
 - 覆盖范围：导入校验 (3)、参数化过滤 (10)、全样本加载 (6)、数据验证 (13)、排序 (2)、继承接口 (6)、边界情况 (7)
