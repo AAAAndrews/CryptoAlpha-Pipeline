@@ -80,7 +80,7 @@
   {
     "id": 14,
     "task": "创建 FactorAnalysis/data_quality.py：实现 check_data_quality(factor, returns, max_loss=0.35)，计算因子与收益率对齐后的数据覆盖率（非 NaN 比例），低于阈值时发出 UserWarning 或抛出异常",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

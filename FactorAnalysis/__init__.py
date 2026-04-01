@@ -11,6 +11,7 @@ from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bot
 from .cost import deduct_cost
 from .evaluator import FactorEvaluator
 from .report import generate_report
+from .data_quality import check_data_quality
 
 __all__ = [
     # 核心指标 / Core metrics
@@ -32,4 +33,6 @@ __all__ = [
     "FactorEvaluator",
     # 报告输出 / Report output
     "generate_report",
+    # 数据质量 / Data quality
+    "check_data_quality",
 ]

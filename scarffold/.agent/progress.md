@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 23:00] feat: complete task 14 — 数据质量追踪 (data_quality)
+- 新增 `FactorAnalysis/data_quality.py`，实现 `check_data_quality(factor, returns, max_loss=0.35)`
+- 先对因子值和收益率做索引内连接对齐，再计算有效数据（非 NaN、非 inf）的覆盖率
+- 覆盖率低于 (1 - max_loss) 时发出 UserWarning，低于 30% 时抛出 ValueError
+- 完整参数校验：类型检查、max_loss 范围 [0, 1)、无重叠索引检测
+- 已导出到 `FactorAnalysis/__init__.py` 的公共 API
+- 新增 `tests/test_task14_data_quality.py`，29 项测试全部通过
+- 覆盖范围：导入校验 (2)、正常覆盖率 (5)、低覆盖率告警 (4)、极低覆盖率异常 (2)、max_loss 参数校验 (6)、输入类型校验 (3)、边界情况 (5)、覆盖率精度 (2)
+- 用法：
+  ```python
+  from FactorAnalysis.data_quality import check_data_quality
+  coverage = check_data_quality(factor_values, forward_returns, max_loss=0.35)
+  # 返回 float 覆盖率，低覆盖率发出 UserWarning，极低抛出 ValueError
+  ```
+
 [2026-04-02 22:00] feat: complete task 13 — 换手率指标深度验证测试
 - 新增 `tests/test_task13_turnover_verify.py`，51 项测试全部通过
 - 覆盖范围：返回结构与类型 (8)、值域验证 (6)、稳定因子行为 (5)、振荡因子行为 (2)、弱/随机因子行为 (6)、边界情况 (11)、参数校验 (8)、大数据量 (1)
