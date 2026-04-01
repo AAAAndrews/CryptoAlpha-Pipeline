@@ -3,6 +3,12 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 23:30] feat: complete task 15 — 数据质量追踪深度验证测试
+- 新增 `tests/test_task15_data_quality_verify.py`，74 项测试全部通过
+- 覆盖范围：返回结构与类型 (6)、正常覆盖率无告警 (7)、低覆盖率告警 (6)、极低覆盖率异常 (5)、max_loss 参数校验 (13)、输入类型校验 (3)、索引对齐 (4)、inf/NaN 混合无效值 (7)、独立 NaN (3)、边界情况 (7)、覆盖率单调性 (3)
+- 关键验证点：多种子稳定性、参数化 NaN 比例告警/异常行为、max_loss 阈值控制、部分重叠索引覆盖率计算、inf/-inf 视为无效、因子与收益率独立 NaN 取并集、30% 边界精确验证
+- 用法：`python -m pytest tests/test_task15_data_quality_verify.py -v`
+
 [2026-04-02 23:00] feat: complete task 14 — 数据质量追踪 (data_quality)
 - 新增 `FactorAnalysis/data_quality.py`，实现 `check_data_quality(factor, returns, max_loss=0.35)`
 - 先对因子值和收益率做索引内连接对齐，再计算有效数据（非 NaN、非 inf）的覆盖率
