@@ -3,6 +3,30 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-02 18:30] feat: complete task 23 — 端到端投研编排脚本
+- 新增 `scripts/run_factor_research.py`，实现一键串联完整因子投研流程：
+  数据加载 (KlineLoader) → 因子计算 (FactorLib) → 收益率计算 (calc_returns) →
+  因子对齐 (align_factor_returns) → 数据质量检查 (check_data_quality) →
+  绩效检验 (FactorEvaluator.run_all) → 报告输出 (generate_report)
+- CLI 参数支持：--factor (必填), --return-label, --n-groups, --cost-rate,
+  --top-k, --bottom-k, --risk-free-rate, --periods-per-year, --max-loss,
+  --start-time, --end-time, --symbols, --exchange, --kline-type, --interval
+- 内部辅助函数：_build_factor_multiindex (RangeIndex → MultiIndex 转换),
+  _print_metrics (关键指标摘要打印)
+- main() 函数内嵌 try/except 处理 KeyboardInterrupt 和通用异常
+- 新增 `tests/test_task23_e2e_script.py`，30 项测试全部通过
+- 覆盖范围：导入校验 (3)、CLI 参数解析 (8)、_build_factor_multiindex (7)、
+  _print_metrics (5)、核心流程 mock 数据 (8)、错误处理 (3)、结构化输出 (4)
+- 关键验证点：完整流程端到端跑通、两种收益率标签 (close2close/open2open)、
+  自定义 cost_rate/n_groups 参数正确传递、FactorEvaluator 全部 12 项属性已填充、
+  报告为单行 DataFrame 且含关键列、空数据/未知因子返回 None、KeyboardInterrupt 被捕获
+- 用法：
+  ```bash
+  python scripts/run_factor_research.py --factor AlphaMomentum --return-label close2close --n-groups 5
+  python scripts/run_factor_research.py --factor AlphaVolatility --symbols BTCUSDT ETHUSDT --start-time 2024-01-01
+  python scripts/run_factor_research.py --factor AlphaPriceRange --cost-rate 0.002 --interval 4h
+  ```
+
 [2026-04-02 17:00] feat: complete task 22 — FactorAnalysis 公共导出完整性更新
 - 更新 `FactorAnalysis/__init__.py`，新增 7 个公共导出：
   calc_ic_stats (metrics), calc_returns (returns), align_factor_returns (alignment),

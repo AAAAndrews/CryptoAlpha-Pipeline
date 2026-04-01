@@ -134,7 +134,7 @@
   {
     "id": 23,
     "task": "创建端到端投研编排脚本 scripts/run_factor_research.py：串联数据加载→收益率计算→因子计算→因子对齐→IC/分组/净值/成本/绩效→换手率→中性化，支持 CLI 参数（因子名、收益率标签、分组数、成本参数）",
-    "passes": false,
+    "passes": true,
     "deps": [1, 5, 6, 20]
   },
   {
