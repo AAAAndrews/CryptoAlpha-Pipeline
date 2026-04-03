@@ -45,12 +45,21 @@ def has_pending_tasks(tasks_file):
         data = json.load(f)
     return any(not item.get("passes", True) for item in data)
 
+def get_dynamic_max_loops(tasks_file):
+    with open(tasks_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    passed_count = sum(1 for item in data if item.get("passes") is True)
+    total_count = len(data)
+    pending_count = max(0, total_count - passed_count)
+
+    return pending_count, passed_count, total_count
+
 def main():
     root_dir = Path(__file__).resolve().parent
     agent_dir = root_dir / "scarffold" / ".agent"
     tasks_file = agent_dir / "tasks.json"
 
-    max_loops = int(os.environ.get("MAX_LOOPS", "20"))
     use_dangerous = os.environ.get("DANGEROUS_SKIP_PERMISSIONS", "1") == "1"
     claude_stream = os.environ.get("CLAUDE_STREAM", "0")
     claude_verbose = os.environ.get("CLAUDE_VERBOSE", "1")
@@ -63,6 +72,9 @@ def main():
 
     if not shutil.which("claude"):
         fail("Missing required command: claude")
+
+    validate_tasks_file(tasks_file)
+    max_loops, passed_count, total_count = get_dynamic_max_loops(tasks_file)
 
     claude_args = []
     if claude_verbose == "1":
@@ -77,7 +89,12 @@ def main():
         log(f"Debug log file: {debug_file}")
 
     prompt = "严格遵循 CLAUDE.md 的 SOP 只执行一个下一个待完成任务,完成验证,更新状态,提交代码,然后立即退出."
-    
+    print(
+        f"[run-coder] Starting with dynamic MAX_LOOPS={max_loops} "
+        f"(passes=True: {passed_count}/{total_count}), "
+        f"DANGEROUS_SKIP_PERMISSIONS={use_dangerous}, "
+        f"CLAUDE_STREAM={claude_stream}, CLAUDE_VERBOSE={claude_verbose}, CLAUDE_DEBUG={claude_debug}"
+    )
     for count in range(max_loops):
         validate_tasks_file(tasks_file)
         
@@ -89,7 +106,7 @@ def main():
         log(f"Starting iteration {iter_num}/{max_loops}")
         log(f"Claude args: {' '.join(claude_args)}")
         
-        cmd = ["claude", prompt]
+        cmd =  ["claude", "-p", prompt]
         if use_dangerous:
             cmd.append("--dangerously-skip-permissions")
         cmd.extend(claude_args)

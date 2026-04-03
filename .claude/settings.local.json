@@ -7,7 +7,7 @@
       "Bash(where git:*)",
       "Bash(/d/Git/bin/git.exe branch:*)",
       "Bash(\"D:/Git/bin/git.exe\" branch:*)",
-      "Bash(cmd /c \"cd /d F:\\\\MyCryptoTrading\\\\CryptoAlpha\\\\CryptoAlpha-Pipeline && git add CryptoDataProviders/utils/retry.py CryptoDataProviders/utils/__init__.py scarffold/.agent/tasks.json scarffold/.agent/progress.txt && git commit -m \\\\\"feat: complete task 1 - retry utility with exponential backoff\\\\\"\" 2>&1)",
+      "Bash(cmd /c \"cd /d F:\\\\MyCryptoTrading\\\\CryptoAlpha\\\\CryptoAlpha-Pipeline && git add CryptoDataProviders/utils/retry.py CryptoDataProviders/utils/__init__.py scarffold/.agent/tasks.json scarffold/.agent/progress.md && git commit -m \\\\\"feat: complete task 1 - retry utility with exponential backoff\\\\\"\" 2>&1)",
       "Bash(powershell.exe -Command \"git -C 'F:\\\\MyCryptoTrading\\\\CryptoAlpha\\\\CryptoAlpha-Pipeline' status\" 2>&1)",
       "PowerShell(git:*)"
     ]

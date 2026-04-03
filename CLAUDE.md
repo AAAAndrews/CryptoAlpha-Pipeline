@@ -20,7 +20,7 @@
 
 ## Step 1: Context Recovery / 恢复上下文
 - 检查当前分支是否在dev上。如果项目没有dev分支，请你创建并切换到该分支上，并将内容进行initial commit。项目的主分支为main，禁止在main分支上进行任何开发活动。
-- 读取 `scarffold/.agent/progress.txt` 以了解最新进度。
+- 读取 `scarffold/.agent/progress.md` 以了解最新进度。
 - 运行 `git log -n 3 --oneline` 以检查最近的变更。
 - 阅读 `scarffold/.agent/architecture.md` 以对齐实现方案。
 - 阅读 `scarffold/.agent/tasks.json` 并识别当前的任务图。
@@ -38,10 +38,14 @@
 
 ## Step 4: State Commit / 状态封存
 - 更新 `scarffold/.agent/tasks.json`：将所选任务的 `passes` 设置为 `true`。
-- 在 `scarffold/.agent/progress.txt` 顶部追加日志条目，并留下一些你认为有用的给开发者的备注，介绍功能用法。
+- 在 `scarffold/.agent/progress.md` 顶部追加日志条目，并留下一些你认为有用的给开发者的备注，介绍功能用法。
 - 使用清晰的提交信息提交所有必要的更改，例如：
   `feat: complete task [ID]` 或 `fix: complete task [ID]`
 - 提交完成后，立即停止并退出。
+
+## Test File Location / 测试文件存放规则
+- 所有测试用例文件（`test_*.py`）必须存放在工作区根目录的 `tests/` 文件夹中。
+- 禁止将测试文件放置在 `scarffold/` 目录内部。/ Never place test files inside the `scarffold/` directory.
 
 ## Hard Constraints / 硬约束
 - 严禁跳过已完成任务的测试。
