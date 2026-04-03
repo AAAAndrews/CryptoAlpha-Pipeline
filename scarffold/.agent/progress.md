@@ -3,6 +3,12 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 10] feat: 分块净值曲线持仓连续性验证测试 (128 checks passed)
+- 新增 `tests/test_chunked_curve_continuity.py`，验证分块净值曲线的连续性、cumprod 衔接点无跳变、rebalance_freq 与分块交互
+- 10 个场景：隐含日收益率一致性（long/short/hedge）、21 个块边界比值零跳变、7 种素数 chunk_size 连续性、5 种 rebalance_freq 与分块交互（数值 diff < 1e-14）、4 种不对齐 chunk_size 自动对齐验证、chunk_size=1 极端连续性、5 种子稳定性、NaN 因子连续性、4 种 cost_rate × 3 种 chunk_size 成本曲线连续性、8 种 rebalance_freq+分组参数组合
+- 关键结论：分块曲线隐含日收益率与全量完全一致（diff ≤ 2.22e-16 = machine epsilon），cumprod 衔接点比值 diff=0.00e+00
+- 用法：`python tests/test_chunked_curve_continuity.py` → 128 checks 全部 PASS
+
 [2026-04-04 Task 9] feat: 分块 IC/IR 数值一致性验证测试 (718 checks passed)
 - 新增 `tests/test_chunked_ic_consistency.py`，验证分块 vs 全量 IC/RankIC/ICIR/IC_stats 数值一致性（差异 < 1e-8）
 - 覆盖 10 个场景：多种子稳定性（10 seeds）、多 chunk_size（15 种）、多数据规模（6 种）、含 NaN 数据（4 种比例）、NaN+种子组合、极端信号强度、chunk_size>n_dates 退化、极少量时间截面、IC 序列长度一致性、索引顺序一致性

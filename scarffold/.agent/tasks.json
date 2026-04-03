@@ -56,7 +56,7 @@
   {
     "id": 10,
     "task": "分块净值曲线持仓连续性验证测试：验证多块拼接后曲线连续、cumprod 衔接点无跳变、rebalance_freq 与分块交互正常",
-    "passes": false,
+    "passes": true,
     "deps": [5]
   },
   {
