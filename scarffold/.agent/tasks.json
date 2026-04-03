@@ -62,7 +62,7 @@
   {
     "id": 11,
     "task": "分块内存占用对比验证测试：验证 chunk_size=100 时峰值内存 < 全量模式 40%，内存监控日志输出正确",
-    "passes": false,
+    "passes": true,
     "deps": [8]
   },
   {

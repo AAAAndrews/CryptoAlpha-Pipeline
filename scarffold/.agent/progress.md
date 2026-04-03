@@ -3,6 +3,12 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 11] feat: 分块内存占用对比验证测试 (30 checks passed)
+- 新增 `tests/test_chunked_memory.py`，验证分块模式峰值内存显著低于全量模式
+- 7 个场景：chunk_size=100 峰值内存 < 全量 40%（500×200 数据：32.47%）、多种 chunk_size 内存递减趋势（50/100/250 vs full）、ChunkMemoryTracker 属性记录正确（peak_mb/rss_mb）、内存日志格式验证（peak_alloc/RSS/chunk index）、多块追踪一致性（4 块独立追踪）、run_all() 分块模式下 5 个子方法全部产生内存日志（20 条）、不同数据规模下 chunk_size=100 内存比均 < 40%（500 日期 32.83%，800 日期 25.60%）
+- 关键结论：分块模式内存节省显著，chunk_size=100 时峰值内存约为全量模式的 25-33%
+- 用法：`python tests/test_chunked_memory.py` → 30 checks 全部 PASS
+
 [2026-04-04 Task 10] feat: 分块净值曲线持仓连续性验证测试 (128 checks passed)
 - 新增 `tests/test_chunked_curve_continuity.py`，验证分块净值曲线的连续性、cumprod 衔接点无跳变、rebalance_freq 与分块交互
 - 10 个场景：隐含日收益率一致性（long/short/hedge）、21 个块边界比值零跳变、7 种素数 chunk_size 连续性、5 种 rebalance_freq 与分块交互（数值 diff < 1e-14）、4 种不对齐 chunk_size 自动对齐验证、chunk_size=1 极端连续性、5 种子稳定性、NaN 因子连续性、4 种 cost_rate × 3 种 chunk_size 成本曲线连续性、8 种 rebalance_freq+分组参数组合
