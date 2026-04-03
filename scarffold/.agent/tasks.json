@@ -81,7 +81,7 @@
   {
     "id": 14,
     "task": "重点排查项检查：①因子计算是否使用当日 close 后数据 ②KlineLoader 是否返回未来时间戳行 ③align_factor_and_returns() 是否正确 drop 最后一行 ④shift(-1) 使用位置确认无反向 shift",
-    "passes": false,
+    "passes": true,
     "deps": [13]
   },
   {

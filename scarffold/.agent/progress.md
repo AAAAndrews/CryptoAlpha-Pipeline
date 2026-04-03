@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 14] feat: 重点排查项检查 (17 checks passed)
+- 新增 `tests/test_future_leak_audit.py`，四项排查全部 PASS
+- 排查项 ① 因子计算不使用当日 close 后数据：4 个测试（动量/波动率/价格振幅独立性验证 + 截断未来数据对比），截断前后因子值 diff < 1e-12
+- 排查项 ② KlineLoader 不返回未来时间戳行：3 个测试（AST 源码无 shift 操作、无前瞻关键字、仅调用 load_multi_klines 读取历史数据）
+- 排查项 ③ align_factor_and_returns() 正确 drop 最后一行：4 个测试（末尾时间戳被剔除、输出无 NaN、剔除行数精确匹配 lookback NaN + 末尾 NaN、有效数据保留）
+- 排查项 ④ shift(-1) 使用位置确认无反向 shift：5 个测试（AST 扫描全项目 shift(-N) 仅出现在 returns.py/datapreprocess.py、正向 shift 安全、returns.py 仅 shift(-1)、datapreprocess.py shift(-N) 用于收益矩阵、FactorLib 无 shift(-N)）
+- 关键结论：系统无未来函数泄露风险，shift(-N) 严格限定在收益计算文件中
+- 用法：`python -m pytest tests/test_future_leak_audit.py -v` → 17 checks 全部 PASS
+
 [2026-04-04 Task 13] feat: 未来函数审查报告 — 逐文件审查信号生成逻辑
 - 新增 `scarffold/.agent/future_leak_review.md`，覆盖 FactorLib/（3 因子）、FactorAnalysis/（12 模块）、Cross_Section_Factor/（9 模块）共 24 个文件的完整审查
 - 总体结论：当前系统不存在实质性未来函数泄露风险，所有 shift(-1) 均用于 T+1 前向收益计算（标准设计），因子信号生成仅使用历史/当期数据
