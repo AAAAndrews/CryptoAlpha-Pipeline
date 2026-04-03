@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 9] feat: 分块 IC/IR 数值一致性验证测试 (718 checks passed)
+- 新增 `tests/test_chunked_ic_consistency.py`，验证分块 vs 全量 IC/RankIC/ICIR/IC_stats 数值一致性（差异 < 1e-8）
+- 覆盖 10 个场景：多种子稳定性（10 seeds）、多 chunk_size（15 种）、多数据规模（6 种）、含 NaN 数据（4 种比例）、NaN+种子组合、极端信号强度、chunk_size>n_dates 退化、极少量时间截面、IC 序列长度一致性、索引顺序一致性
+- 所有 diff 均为 0.00e+00（IC 序列在各时间截面独立，分块拼接与全量计算完全一致）
+- IC_stats 全字段验证：IC_mean/IC_std/ICIR/t_stat/p_value/IC_skew/IC_kurtosis
+- 用法：`python tests/test_chunked_ic_consistency.py` → 718 checks 全部 PASS
+
+[2026-04-04 Task 8] feat: 内存监控日志集成 ChunkMemoryTracker (8 tests passed)
+
 [2026-04-04 Task 8] feat: 内存监控日志集成 ChunkMemoryTracker (8 tests passed)
 - `chunking.py` 新增 `ChunkMemoryTracker` 上下文管理器：使用 `tracemalloc` 追踪每块 Python 堆内存峰值，可选 `psutil` 获取进程 RSS
 - 日志输出格式：`[chunk i/N] description | peak_alloc=X.XX MB, RSS=X.XX MB`，写入 `FactorAnalysis.chunking` logger

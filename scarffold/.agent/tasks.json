@@ -50,7 +50,7 @@
   {
     "id": 9,
     "task": "分块 IC/IR 数值一致性验证测试：验证分块计算与全量计算的 IC_mean/IC_std/ICIR 差异 < 1e-8，多种子稳定性",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {
