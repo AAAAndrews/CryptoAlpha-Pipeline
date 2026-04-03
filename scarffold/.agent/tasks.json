@@ -87,7 +87,7 @@
   {
     "id": 15,
     "task": "创建 scripts/check_future_leak.py 自动化检测脚本：加载因子数据→检查 factor/forward_return 时间对齐→验证 factor 不依赖未来数据→检查 shift(-1) 位置→输出 PASS/FAIL 报告",
-    "passes": false,
+    "passes": true,
     "deps": [14]
   },
   {

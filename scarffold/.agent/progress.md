@@ -3,6 +3,17 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 15] feat: 未来函数自动化检测脚本 check_future_leak.py (15 checks passed)
+- 新增 `scripts/check_future_leak.py`，包含静态代码扫描 + 动态数据验证两层检测机制
+- 静态扫描（Phase 1）：AST + 正则双重扫描，3 项检测——FactorLib 无 shift(-N)、shift(-N) 仅在 returns.py/datapreprocess.py、KlineLoader 无 shift
+- 动态验证（Phase 2）：4 项检测 × 每个已注册因子——因子独立性（截断未来数据对比 diff < 1e-12）、最后一期收益为 NaN、对齐剔除最后时间戳、对齐后无 NaN
+- FutureLeakDetector 类：run() 方法串联全部检测，to_markdown() 生成结构化 Markdown 报告
+- CLI 参数：--factor（指定因子）、--return-label（收益标签）、--start-time/--end-time（数据范围）、--symbols（交易对）、--report-path（报告输出路径）
+- 退出码：0 = ALL PASSED，1 = FAILED，支持 CI 集成
+- 关键结论：3 个已注册因子（AlphaMomentum/AlphaPriceRange/AlphaVolatility）全部 15 项检测 PASS
+- 用法：`python scripts/check_future_leak.py --start-time 2024-01-01 --end-time 2024-02-01 --symbols BTCUSDT ETHUSDT` → 15 checks ALL PASSED
+- 报告输出：`python scripts/check_future_leak.py --report-path output/report.md` → 生成 Markdown 格式报告
+
 [2026-04-04 Task 14] feat: 重点排查项检查 (17 checks passed)
 - 新增 `tests/test_future_leak_audit.py`，四项排查全部 PASS
 - 排查项 ① 因子计算不使用当日 close 后数据：4 个测试（动量/波动率/价格振幅独立性验证 + 截断未来数据对比），截断前后因子值 diff < 1e-12
