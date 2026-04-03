@@ -3,6 +3,18 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 27] feat: 可视化图表生成验证测试 (42 checks passed)
+- 新增 `tests/test_viz_chart_validation.py`，7 个测试类 42 项检测全面覆盖 4 种图表的生成验证
+- 图表正确生成 (6 tests)：IC 时间序列 / 分组收益 / 净值曲线 / 换手率均返回 plt.Figure，同一 evaluator 可依次生成全部图表，子图数量正确
+- PNG 格式验证 (7 tests)：4 种图表输出均为合法 PNG（魔数 `\x89PNG\r\n\x1a\n` + IHDR chunk），文件非空，不同 DPI 下文件大小不同
+- 中文标签可读 (9 tests)：`configure_chinese_font()` 无异常、自定义字体列表、4 种图表标题包含中英文、`axes.unicode_minus=False`、Y 轴标签非空、分组图例包含"组"
+- 数据一致性 (9 tests)：IC 柱数 = IC 序列长度、累积 IC 量级匹配、分组折线数 = n_groups、分组/净值曲线起始值 1.0、两个子图 long/short 相同、换手率非负、自相关 ∈ [-1,1]、绘图前后 evaluator 指标不变
+- 多种子稳定性 (5 tests)：5 种子 × 4 图表全部正常生成
+- 边界情况 (6 tests)：最小数据（10 时间截面）、大数据（300×30）、2 组 / 10 组、4 图表保存同目录、无 output_path 不创建文件
+- 关键设计：`_make_full_evaluator()` 辅助函数依次调用 run_metrics/grouping/curves/turnover，返回可用于全部 4 种图表的完整 evaluator
+- 用法：`python -m pytest tests/test_viz_chart_validation.py -v` → 42 checks 全部 PASS
+
+
 [2026-04-04 Task 26] feat: --viz-output CLI 参数集成可视化到 pipeline (19 checks passed)
 - `run_factor_research.py` 新增 `viz_output` 参数（默认 `output/viz/`），CLI 新增 `--viz-output` 参数
 - 新增 Step 7/8 可视化生成步骤：调用 `build_html_report(ev, output_dir, title)` 生成 report.html

@@ -160,7 +160,7 @@
   {
     "id": 27,
     "task": "可视化图表生成验证测试：验证 4 种图表正确生成、文件格式为 PNG、中文标签可读、数据与 FactorEvaluator 结果一致",
-    "passes": false,
+    "passes": true,
     "deps": [20, 21, 22, 23]
   },
   {
