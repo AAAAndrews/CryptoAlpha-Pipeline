@@ -16,6 +16,12 @@ rich>=13.0.0
 # 可视化 / Visualization
 matplotlib>=3.7.0
 
+# 内存监控 / Memory monitoring
+psutil>=5.9.0
+
+# HTML 模板渲染 / HTML template rendering
+jinja2>=3.1.0
+
 # 并行计算 / Parallel computing
 joblib>=1.3.0
 
