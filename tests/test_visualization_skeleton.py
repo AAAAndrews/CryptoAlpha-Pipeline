@@ -191,7 +191,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_plot_ic_timeseries_raises(self):
         from FactorAnalysis.visualization.charts import plot_ic_timeseries
-        with pytest.raises(NotImplementedError):
+        # Task 20 已实现，None evaluator 应抛出 ValueError / Task 20 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             plot_ic_timeseries(None)
 
     def test_plot_group_returns_raises(self):

@@ -84,8 +84,10 @@ configure_chinese_font()
 def plot_ic_timeseries(
     evaluator,
     output_path: str | None = None,
-    figsize: tuple[float, float] = (12, 5),
+    figsize: tuple[float, float] = (12, 7),
     dpi: int = 150,
+    rolling_window_week: int = 5,
+    rolling_window_month: int = 22,
 ) -> plt.Figure:
     """
     绘制 IC 时间序列图 / Plot IC timeseries chart.
@@ -94,6 +96,11 @@ def plot_ic_timeseries(
     Includes rolling IC (monthly/weekly) and cumulative IC curve,
     with mean line and ± 1std shaded band.
 
+    上子图：日频 IC 柱状图 + 滚动 IC 均线（周度/月度）+ IC 均值线 + ±1std 阴影带
+    下子图：累积 IC 曲线
+    Top subplot: daily IC bars + rolling IC lines (weekly/monthly) + mean line + ±1std band
+    Bottom subplot: cumulative IC curve
+
     Parameters / 参数:
         evaluator: 已调用 run_metrics() 的 FactorEvaluator 实例
                    A FactorEvaluator instance that has called run_metrics()
@@ -101,6 +108,10 @@ def plot_ic_timeseries(
                     Image save path, None to skip saving
         figsize: 图表尺寸 / Figure size
         dpi: 图片分辨率 / Image DPI
+        rolling_window_week: 周度滚动窗口天数，默认 5
+                            Weekly rolling window in days, default 5
+        rolling_window_month: 月度滚动窗口天数，默认 22
+                             Monthly rolling window in days, default 22
 
     Returns / 返回:
         plt.Figure — matplotlib Figure 对象 / matplotlib Figure object
@@ -108,7 +119,78 @@ def plot_ic_timeseries(
     Raises / 异常:
         ValueError: evaluator 尚未调用 run_metrics()
     """
-    raise NotImplementedError("plot_ic_timeseries 将在 Task 20 中实现")
+    import numpy as np
+
+    # 校验前置条件 / validate preconditions
+    if evaluator is None:
+        raise ValueError("evaluator 不能为 None")
+    if evaluator.ic is None:
+        raise ValueError("evaluator 尚未调用 run_metrics()，请先执行 evaluator.run_metrics()")
+
+    ic = evaluator.ic.dropna()
+    if len(ic) == 0:
+        raise ValueError("IC 序列为空，无法绘制图表")
+
+    ic_mean = float(ic.mean())
+    ic_std = float(ic.std())
+
+    # --- 上子图：日频 IC + 滚动均线 + 均值线 + ±1std 阴影带 ---
+    # --- Top subplot: daily IC + rolling lines + mean + ±1std band ---
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, dpi=dpi,
+                                    gridspec_kw={"height_ratios": [3, 2]})
+    fig.subplots_adjust(hspace=0.35)
+
+    dates = ic.index
+
+    # 日频 IC 柱状图 / daily IC bar chart
+    ax1.bar(dates, ic.values, width=1.0, alpha=0.35, color="steelblue",
+            label="日频 IC / Daily IC")
+
+    # 滚动 IC 均线 / rolling IC lines
+    ic_series = ic.copy()
+    if len(ic) >= rolling_window_week:
+        rolling_week = ic_series.rolling(window=rolling_window_week, min_periods=1).mean()
+        ax1.plot(dates, rolling_week.values, color="darkorange", linewidth=1.2,
+                 label=f"周度滚动 ({rolling_window_week}D) / Weekly rolling")
+
+    if len(ic) >= rolling_window_month:
+        rolling_month = ic_series.rolling(window=rolling_window_month, min_periods=1).mean()
+        ax1.plot(dates, rolling_month.values, color="crimson", linewidth=1.2,
+                 label=f"月度滚动 ({rolling_window_month}D) / Monthly rolling")
+
+    # IC 均值线 / IC mean line
+    ax1.axhline(y=ic_mean, color="black", linestyle="--", linewidth=1.0,
+                label=f"IC 均值 / Mean = {ic_mean:.4f}")
+
+    # ±1std 阴影带 / ±1std shaded band
+    ax1.axhspan(ic_mean - ic_std, ic_mean + ic_std, alpha=0.10, color="gray",
+                label=f"±1std ({ic_std:.4f})")
+
+    # 零线 / zero line
+    ax1.axhline(y=0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax1.set_title("IC 时间序列 / IC Timeseries", fontsize=13, fontweight="bold")
+    ax1.set_ylabel("IC", fontsize=10)
+    ax1.legend(loc="upper right", fontsize=8)
+    ax1.grid(True, alpha=0.3)
+
+    # --- 下子图：累积 IC 曲线 / Bottom subplot: cumulative IC curve ---
+    cumulative_ic = ic.cumsum()
+    ax2.fill_between(dates, cumulative_ic.values, alpha=0.3, color="steelblue")
+    ax2.plot(dates, cumulative_ic.values, color="steelblue", linewidth=1.0)
+    ax2.axhline(y=0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax2.set_title("累积 IC / Cumulative IC", fontsize=13, fontweight="bold")
+    ax2.set_xlabel("日期 / Date", fontsize=10)
+    ax2.set_ylabel("累积 IC", fontsize=10)
+    ax2.grid(True, alpha=0.3)
+
+    # 保存图片 / save figure
+    if output_path is not None:
+        fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+        logger.info("IC 时间序列图已保存: %s", output_path)
+
+    return fig
 
 
 def plot_group_returns(

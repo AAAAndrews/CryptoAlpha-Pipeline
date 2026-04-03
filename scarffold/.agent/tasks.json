@@ -118,7 +118,7 @@
   {
     "id": 20,
     "task": "IC 时间序列图：绘制滚动 IC（月度/周度）和累积 IC 曲线，标注 IC 均值线 ± 1std 阴影带，保存 ic_timeseries.png",
-    "passes": false,
+    "passes": true,
     "deps": [19]
   },
   {

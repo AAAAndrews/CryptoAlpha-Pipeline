@@ -3,6 +3,17 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 20] feat: IC 时间序列图 plot_ic_timeseries (23 checks passed)
+- 实现 `charts.py` 中的 `plot_ic_timeseries()` 函数，替换 NotImplementedError 骨架
+- 上子图：日频 IC 柱状图 + 周度滚动 IC (5D) + 月度滚动 IC (22D) + IC 均值虚线 + ±1std 灰色阴影带 + 零线
+- 下子图：累积 IC 曲线（cumsum）+ 半透明填充区域 + 零线
+- 参数支持：`output_path`（PNG 保存）、`figsize`、`dpi`、`rolling_window_week`、`rolling_window_month`
+- 校验：evaluator 为 None / ic 为 None / IC 序列为空均抛出 ValueError
+- 更新骨架测试：`test_plot_ic_timeseries_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 23 项测试：基础功能 (4) + 图表内容 (5) + 文件保存 (3) + 参数验证 (5) + 数据一致性 (3) + 边界情况 (3)
+- 关键设计：使用 `axhline` 画均值线和零线，`axhspan` 画 ±1std 阴影带，`fill_between` 画累积 IC
+- 用法：`from FactorAnalysis.visualization import plot_ic_timeseries` → `fig = plot_ic_timeseries(evaluator, output_path="ic_timeseries.png")`
+
 [2026-04-04 Task 19] feat: FactorAnalysis/visualization/ 模块骨架 (24 checks passed)
 - 新增 `FactorAnalysis/visualization/` 子包：`__init__.py` + `charts.py` + `tables.py` + `report_html.py`
 - `charts.py`：`configure_chinese_font()` 自动配置中文字体（按 Windows/Mac/Linux 平台选择候选字体列表），模块加载时自动执行；4 个图表函数骨架（`plot_ic_timeseries`/`plot_group_returns`/`plot_portfolio_curves`/`plot_turnover`），后续 Task 20-23 逐步实现
