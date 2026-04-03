@@ -3,6 +3,13 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 13] feat: 未来函数审查报告 — 逐文件审查信号生成逻辑
+- 新增 `scarffold/.agent/future_leak_review.md`，覆盖 FactorLib/（3 因子）、FactorAnalysis/（12 模块）、Cross_Section_Factor/（9 模块）共 24 个文件的完整审查
+- 总体结论：当前系统不存在实质性未来函数泄露风险，所有 shift(-1) 均用于 T+1 前向收益计算（标准设计），因子信号生成仅使用历史/当期数据
+- 重点排查 4 项全部 PASS：因子计算不使用 close 后数据、KlineLoader 无未来时间戳、alignment 正确剔除末尾 NaN、shift(-1) 位置无反向误用
+- 完整 shift 操作清单：6 处 shift 调用全部安全（returns.py/datapreprocess.py 的前看 shift 用于收益计算，timeseries_ops.py/turnover.py/alpha_momentum.py 的正 shift 用于回看）
+- 用法：查阅 `scarffold/.agent/future_leak_review.md` 获取每个模块的信号时点、价格字段、T+1 对齐关系和风险等级
+
 [2026-04-04 Task 12] feat: 分块处理集成测试 (153 checks passed)
 - 新增 `tests/test_chunked_integration.py`，验证分块处理模式的完整集成行为
 - 8 个场景：chunk_size=None 向后兼容（36 项属性/类型/起始值检查）、run_all() 分块模式完整流程（IC/净值/绩效比率全字段对比）、5 个子方法分块独立可用（metrics/grouping/curves/turnover/neutralize）、generate_report() 分块/全量模式对比（含选择性板块报告 + 无效板块异常）、run() 向后兼容别名（全量+分块+run vs run_all 一致性）、4 种子 × 3 chunk_size 多种子稳定性、含 NaN 数据集成、链式调用混合模式

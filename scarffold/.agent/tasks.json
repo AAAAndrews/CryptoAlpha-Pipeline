@@ -75,7 +75,7 @@
   {
     "id": 13,
     "task": "人工审查报告：逐文件审查 FactorLib/、FactorAnalysis/、Cross_Section_Factor/ 中的信号生成逻辑，输出 Markdown 报告（scarffold/.agent/future_leak_review.md），列出每个因子/模块的信号时点、价格字段、T+1 对齐关系、风险等级",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
