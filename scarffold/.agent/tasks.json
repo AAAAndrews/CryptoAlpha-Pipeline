@@ -142,7 +142,7 @@
   {
     "id": 24,
     "task": "综合绩效表格：将 FactorEvaluator 指标汇总为格式化 HTML 表格，包含信号灯标识（ICIR > 0.5 绿色，< 0 红色）",
-    "passes": false,
+    "passes": true,
     "deps": [19]
   },
   {

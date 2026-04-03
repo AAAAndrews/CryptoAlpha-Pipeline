@@ -215,7 +215,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_build_summary_table_raises(self):
         from FactorAnalysis.visualization.tables import build_summary_table
-        with pytest.raises(NotImplementedError):
+        # Task 24 已实现，None evaluator 应抛出 ValueError / Task 24 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             build_summary_table(None)
 
     def test_build_html_report_raises(self):

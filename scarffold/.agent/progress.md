@@ -3,6 +3,18 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 24] feat: 综合绩效表格 build_summary_table (40 checks passed)
+- 实现 `tables.py` 中的 `build_summary_table()` 函数，替换 NotImplementedError 骨架
+- 5 个板块：IC 分析（9 项指标）、收益分析（4 项）、绩效比率（6 项）、换手率（2 项）、中性化（1 项）
+- ICIR / Sharpe / Calmar / Sortino 列使用信号灯标识：> 0.5 绿色 / < 0 红色 / 其他黄色 / N/A 灰色
+- 内联 CSS 样式，独立使用时无需外部依赖
+- 新增辅助函数：`_fmt()`（浮点格式化，None/NaN → "N/A"）、`_signal_html()`（信号灯 span 标签）
+- 校验：evaluator 为 None 或未执行 run_metrics() 均抛出 ValueError
+- 更新骨架测试：`test_build_summary_table_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 40 项测试：基础功能 (4) + 表格内容 (6) + 信号灯标识 (6) + 参数验证 (2) + 数据一致性 (6) + 辅助函数 (11) + 边界情况 (5)
+- 关键设计：表格独立于 Jinja2 模板，可直接嵌入任意 HTML；信号灯颜色与 report_html.py CSS 类名保持一致
+- 用法：`from FactorAnalysis.visualization import build_summary_table` → `html = build_summary_table(evaluator)`
+
 [2026-04-04 Task 23] feat: 换手率分布图 plot_turnover (24 checks passed)
 - 实现 `charts.py` 中的 `plot_turnover()` 函数，替换 NotImplementedError 骨架
 - 上子图：分组换手率堆叠面积图（stackplot），各组使用 Set2 colormap 着色 + 均值虚线参考线
