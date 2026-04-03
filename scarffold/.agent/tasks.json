@@ -26,7 +26,7 @@
   {
     "id": 5,
     "task": "run_curves() 分块计算：按时间 chunk 逐块构建组合权重与收益曲线，块间衔接保持持仓连续性（上一块末尾持仓作为下一块初始持仓）",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

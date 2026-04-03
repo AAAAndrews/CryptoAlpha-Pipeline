@@ -56,6 +56,7 @@ def calc_long_only_curve(
     n_groups: int = 5,
     top_k: int = 1,
     rebalance_freq: int = 1,
+    _raw: bool = False,
 ) -> pd.Series:
     """
     计算仅多组（按因子值最高的 top_k 组）等权净值曲线 / Calculate long-only equity curve.
@@ -100,7 +101,8 @@ def calc_long_only_curve(
     daily_returns = df.groupby(level=0).apply(_long_return)
     # 累积净值 / cumulative equity
     equity = (1.0 + daily_returns).cumprod()
-    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
+    if not _raw:
+        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
     return equity
 
 
@@ -110,6 +112,7 @@ def calc_short_only_curve(
     n_groups: int = 5,
     bottom_k: int = 1,
     rebalance_freq: int = 1,
+    _raw: bool = False,
 ) -> pd.Series:
     """
     计算仅空组（按因子值最低的 bottom_k 组）等权做空净值曲线 / Calculate short-only equity curve.
@@ -155,7 +158,8 @@ def calc_short_only_curve(
     daily_returns = df.groupby(level=0).apply(_short_return)
     # 累积净值 / cumulative equity
     equity = (1.0 + daily_returns).cumprod()
-    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
+    if not _raw:
+        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
     return equity
 
 
@@ -166,6 +170,7 @@ def calc_top_bottom_curve(
     top_k: int = 1,
     bottom_k: int = 1,
     rebalance_freq: int = 1,
+    _raw: bool = False,
 ) -> pd.Series:
     """
     计算多空对冲组合净值曲线：做多 top_k 组 - 做空 bottom_k 组 / Calculate long-short hedged equity curve.
@@ -218,5 +223,6 @@ def calc_top_bottom_curve(
     daily_returns = df.groupby(level=0).apply(_hedge_return)
     # 累积净值 / cumulative equity
     equity = (1.0 + daily_returns).cumprod()
-    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
+    if not _raw:
+        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
     return equity

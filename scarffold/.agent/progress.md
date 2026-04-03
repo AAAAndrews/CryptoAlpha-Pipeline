@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 5] feat: run_curves() 分块计算 (68 checks passed)
+- `run_curves()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块构建净值曲线
+- 关键设计：使用 `_raw=True` 参数获取未覆写起始值的 raw cumprod 曲线，通过 `_merge_raw_curves` 缩放拼接后统一覆写起始值为 1.0
+- 与 `_merge_curves` 不同，`_merge_raw_curves` 不跳过后续块首元素，保留所有时间戳，确保与全量计算数值一致（diff < 1e-10）
+- 成本扣除（hedge_curve_after_cost）和绩效比率（Sharpe/Calmar/Sortino）在合并后的曲线上计算，与全量模式一致
+- `portfolio.py` 三函数（calc_long_only_curve / calc_short_only_curve / calc_top_bottom_curve）新增 `_raw=False` 内部参数，向后兼容
+- 覆盖 5 种 chunk_size、多种子、含 NaN、小数据集、chunk_size=1、不同 top_k/bottom_k/n_groups/cost_rate、向后兼容等场景
+- 用法：`ev = FactorEvaluator(factor, returns, chunk_size=30); ev.run_curves()` → long/short/hedge 曲线与全量一致
+
 [2026-04-04 Task 4] feat: run_grouping() 分块计算 (37 tests passed)
 - `run_grouping()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块执行 `quantile_group`
 - 分组标签在各时间截面上独立（截面内分位数计算），分块拼接结果与全量计算完全一致（diff = 0）

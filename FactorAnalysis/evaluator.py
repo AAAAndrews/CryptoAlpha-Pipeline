@@ -242,21 +242,60 @@ class FactorEvaluator:
         依次计算：多/空/对冲净值 → 成本扣除 → Sharpe/Calmar/Sortino（成本前+成本后）。
         Computes: long/short/hedge curves → cost deduction → Sharpe/Calmar/Sortino (before & after cost).
 
+        当 chunk_size 已设置时，按时间分块逐块构建净值曲线，使用 raw 曲线（不覆写起始值）
+        合并后统一覆写起始值为 1.0，确保与全量计算数值一致。
+        When chunk_size is set, build equity curves per time chunk using raw curves
+        (without overwriting start value), merge, then overwrite start to 1.0,
+        ensuring numerical consistency with full calculation.
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
-        self.long_curve = calc_long_only_curve(
-            self.factor, self.returns,
-            n_groups=self.n_groups, top_k=self.top_k,
-        )
-        self.short_curve = calc_short_only_curve(
-            self.factor, self.returns,
-            n_groups=self.n_groups, bottom_k=self.bottom_k,
-        )
-        self.hedge_curve = calc_top_bottom_curve(
-            self.factor, self.returns,
-            n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
-        )
+        if self.chunk_size is None:
+            # 全量模式：原有逻辑 / full mode: original logic
+            self.long_curve = calc_long_only_curve(
+                self.factor, self.returns,
+                n_groups=self.n_groups, top_k=self.top_k,
+            )
+            self.short_curve = calc_short_only_curve(
+                self.factor, self.returns,
+                n_groups=self.n_groups, bottom_k=self.bottom_k,
+            )
+            self.hedge_curve = calc_top_bottom_curve(
+                self.factor, self.returns,
+                n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
+            )
+        else:
+            # 分块模式：逐块计算 raw 曲线后合并 / chunked mode: per-chunk raw curves then merge
+            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+
+            # 逐块计算 raw 净值曲线 / compute raw equity curves per chunk
+            long_chunks = [
+                calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k, _raw=True)
+                for fc, rc in zip(factor_chunks, returns_chunks)
+            ]
+            short_chunks = [
+                calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k, _raw=True)
+                for fc, rc in zip(factor_chunks, returns_chunks)
+            ]
+            hedge_chunks = [
+                calc_top_bottom_curve(fc, rc, n_groups=self.n_groups,
+                                      top_k=self.top_k, bottom_k=self.bottom_k, _raw=True)
+                for fc, rc in zip(factor_chunks, returns_chunks)
+            ]
+
+            # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
+            self.long_curve = _merge_raw_curves(long_chunks)
+            self.short_curve = _merge_raw_curves(short_chunks)
+            self.hedge_curve = _merge_raw_curves(hedge_chunks)
+
+            if len(self.long_curve) > 0:
+                self.long_curve.iloc[0] = 1.0
+            if len(self.short_curve) > 0:
+                self.short_curve.iloc[0] = 1.0
+            if len(self.hedge_curve) > 0:
+                self.hedge_curve.iloc[0] = 1.0
         # 对冲净值曲线扣除交易成本 / deduct cost from hedge curve
         hedge_daily = self.hedge_curve.pct_change().fillna(0.0)
         self.hedge_curve_after_cost = deduct_cost(hedge_daily, cost_rate=self.cost_rate)
@@ -447,6 +486,30 @@ class FactorEvaluator:
 # ============================================================
 # 模块级辅助函数 / Module-level helpers
 # ============================================================
+
+
+def _merge_raw_curves(chunk_results: list[pd.Series]) -> pd.Series:
+    """
+    缩放拼接 raw 净值曲线（未覆写起始值），保持 cumprod 连续性 / Scale and concat raw equity curves.
+
+    与 _merge_curves 不同，此函数不跳过后续块的首元素，因为 raw 曲线的首元素
+    是有效 cumprod 值（非覆写的 1.0）。合并后由调用方统一覆写起始值为 1.0。
+    Unlike _merge_curves, this function does NOT skip the first element of subsequent
+    chunks because raw curves have valid cumprod values (not overwritten 1.0).
+    The caller is responsible for overwriting the start value to 1.0 after merging.
+    """
+    if not chunk_results:
+        return pd.Series(dtype=float)
+
+    merged = chunk_results[0].copy()
+    for i in range(1, len(chunk_results)):
+        # 前一块末尾的净值 / last equity value of previous chunk
+        scale = merged.iloc[-1]
+        chunk = chunk_results[i]
+        # 缩放全部元素（含首元素）/ scale ALL elements (including first)
+        scaled = chunk * scale
+        merged = pd.concat([merged, scaled])
+    return merged
 
 
 def _icir_from_series(ic_series: pd.Series) -> float:
