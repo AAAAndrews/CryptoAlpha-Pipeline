@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 22] feat: 组合净值曲线图 plot_portfolio_curves (25 checks passed)
+- 实现 `charts.py` 中的 `plot_portfolio_curves()` 函数，替换 NotImplementedError 骨架
+- 上子图：不含手续费 — long_curve（蓝色）/ short_curve（红色）/ hedge_curve（绿色）三条净值曲线
+- 下子图：含手续费 — long/short 同上 + hedge_curve_after_cost（绿色，标注"含手续费"）
+- 无成本数据时下子图对冲线退化为虚线 + 提示"无成本数据"
+- 两个子图均含 y=1.0 灰色参考线 + 图例 + 网格 + 中英双语标题
+- 参数支持：`output_path`（PNG 保存）、`figsize`、`dpi`
+- 校验：evaluator 为 None / long_curve/short_curve/hedge_curve 任一为 None 均抛出 ValueError
+- 更新骨架测试：`test_plot_portfolio_curves_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 25 项测试：基础功能 (4) + 图表内容 (6) + 文件保存 (3) + 参数验证 (4) + 数据一致性 (3) + 边界情况 (5)
+- 关键设计：long/short 曲线在两个子图中相同（成本仅扣除 hedge），下子图展示成本对对冲净值的实际影响
+- 用法：`from FactorAnalysis.visualization import plot_portfolio_curves` → `fig = plot_portfolio_curves(evaluator, output_path="portfolio_curves.png")`
+
 [2026-04-04 Task 21] feat: 分组收益对比图 plot_group_returns (24 checks passed)
 - 实现 `charts.py` 中的 `plot_group_returns()` 函数，替换 NotImplementedError 骨架
 - 从 evaluator.group_labels + evaluator.returns 计算各组等权平均日收益，cumprod 累计净值曲线

@@ -130,7 +130,7 @@
   {
     "id": 22,
     "task": "组合净值曲线图：绘制 long/short/hedge 三条净值曲线（含/不含手续费两个子图），保存 portfolio_curves.png",
-    "passes": false,
+    "passes": true,
     "deps": [19]
   },
   {

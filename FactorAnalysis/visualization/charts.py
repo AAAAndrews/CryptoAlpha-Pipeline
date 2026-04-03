@@ -300,7 +300,7 @@ def plot_group_returns(
 def plot_portfolio_curves(
     evaluator,
     output_path: str | None = None,
-    figsize: tuple[float, float] = (12, 6),
+    figsize: tuple[float, float] = (12, 7),
     dpi: int = 150,
 ) -> plt.Figure:
     """
@@ -309,6 +309,11 @@ def plot_portfolio_curves(
     long/short/hedge 三条净值曲线（含/不含手续费两个子图）。
     Three equity curves (long/short/hedge) with two subplots
     (before and after cost).
+
+    上子图：不含手续费 — long_curve / short_curve / hedge_curve
+    下子图：含手续费 — long_curve / short_curve / hedge_curve_after_cost
+    Top subplot: before cost — long / short / hedge curves
+    Bottom subplot: after cost — long / short / hedge after cost
 
     Parameters / 参数:
         evaluator: 已调用 run_curves() 的 FactorEvaluator 实例
@@ -322,9 +327,81 @@ def plot_portfolio_curves(
         plt.Figure — matplotlib Figure 对象 / matplotlib Figure object
 
     Raises / 异常:
-        ValueError: evaluator 尚未调用 run_curves()
+        ValueError: evaluator 为 None / 尚未调用 run_curves()
     """
-    raise NotImplementedError("plot_portfolio_curves 将在 Task 22 中实现")
+    import numpy as np
+
+    # 校验前置条件 / validate preconditions
+    if evaluator is None:
+        raise ValueError("evaluator 不能为 None")
+    if evaluator.long_curve is None or evaluator.short_curve is None or evaluator.hedge_curve is None:
+        raise ValueError(
+            "evaluator 尚未调用 run_curves()，请先执行 evaluator.run_curves()"
+        )
+
+    # --- 两个子图：不含手续费 / 含手续费 ---
+    # --- Two subplots: before cost / after cost ---
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, dpi=dpi,
+                                    gridspec_kw={"height_ratios": [3, 3]})
+    fig.subplots_adjust(hspace=0.35)
+
+    # 颜色定义 / color definitions
+    color_long = "#2196F3"      # 蓝色 / blue
+    color_short = "#FF5722"     # 红色 / red
+    color_hedge = "#4CAF50"     # 绿色 / green
+
+    # --- 上子图：不含手续费 / Top subplot: before cost ---
+    long_curve = evaluator.long_curve
+    short_curve = evaluator.short_curve
+    hedge_curve = evaluator.hedge_curve
+
+    ax1.plot(long_curve.index, long_curve.values, color=color_long, linewidth=1.2,
+             label="做多 / Long")
+    ax1.plot(short_curve.index, short_curve.values, color=color_short, linewidth=1.2,
+             label="做空 / Short")
+    ax1.plot(hedge_curve.index, hedge_curve.values, color=color_hedge, linewidth=1.5,
+             label="多空对冲 / L-S Hedge")
+
+    # 起始净值参考线 / start NAV reference line
+    ax1.axhline(y=1.0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax1.set_title("组合净值曲线（不含手续费）/ Portfolio Curves (Before Cost)",
+                  fontsize=13, fontweight="bold")
+    ax1.set_ylabel("累计净值 / Cumulative NAV", fontsize=10)
+    ax1.legend(loc="upper left", fontsize=8)
+    ax1.grid(True, alpha=0.3)
+
+    # --- 下子图：含手续费 / Bottom subplot: after cost ---
+    hedge_after_cost = evaluator.hedge_curve_after_cost
+
+    ax2.plot(long_curve.index, long_curve.values, color=color_long, linewidth=1.2,
+             label="做多 / Long")
+    ax2.plot(short_curve.index, short_curve.values, color=color_short, linewidth=1.2,
+             label="做空 / Short")
+    if hedge_after_cost is not None:
+        ax2.plot(hedge_after_cost.index, hedge_after_cost.values, color=color_hedge,
+                 linewidth=1.5, label="多空对冲（含手续费）/ L-S Hedge (After Cost)")
+    else:
+        # 无成本数据时仍显示不含手续费的对冲线 / show hedge without cost when unavailable
+        ax2.plot(hedge_curve.index, hedge_curve.values, color=color_hedge,
+                 linewidth=1.5, linestyle="--",
+                 label="多空对冲（无成本数据）/ L-S Hedge (No Cost Data)")
+
+    ax2.axhline(y=1.0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax2.set_title("组合净值曲线（含手续费）/ Portfolio Curves (After Cost)",
+                  fontsize=13, fontweight="bold")
+    ax2.set_xlabel("日期 / Date", fontsize=10)
+    ax2.set_ylabel("累计净值 / Cumulative NAV", fontsize=10)
+    ax2.legend(loc="upper left", fontsize=8)
+    ax2.grid(True, alpha=0.3)
+
+    # 保存图片 / save figure
+    if output_path is not None:
+        fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+        logger.info("组合净值曲线图已保存: %s", output_path)
+
+    return fig
 
 
 def plot_turnover(

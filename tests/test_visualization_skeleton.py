@@ -203,7 +203,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_plot_portfolio_curves_raises(self):
         from FactorAnalysis.visualization.charts import plot_portfolio_curves
-        with pytest.raises(NotImplementedError):
+        # Task 22 已实现，None evaluator 应抛出 ValueError / Task 22 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             plot_portfolio_curves(None)
 
     def test_plot_turnover_raises(self):
