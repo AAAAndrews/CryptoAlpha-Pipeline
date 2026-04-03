@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 18] feat: 未来函数检测端到端集成测试 (26 checks passed)
+- 新增 `tests/test_step45_e2e_integration.py`，8 个测试类 26 项检测全面覆盖 step4.5 端到端集成
+- step4.5 集成正确性 (2 tests)：check_leak=True 时 FutureLeakDetector.run() 被调用、check_leak=False 时不导入 check_future_leak 模块
+- PASS 时流程继续 (2 tests)：返回 evaluator 和 report、evaluator 关键指标（ICIR/Sharpe/hedge_curve）数值有效
+- FAIL + leak_block=True 阻断 (3 tests)：返回 (None, None)、单项 FAIL 即阻断、全部 FAIL 也阻断
+- FAIL + leak_block=False 继续 (2 tests)：返回有效 evaluator、evaluator 结果完整
+- CLI 参数 (5 tests)：--check-leak 默认 False、设为 True、--leak-block 组合使用、单独 --leak-block、函数签名验证
+- 向后兼容 (3 tests)：不传 check_leak 正常完成、与 check_leak=False 结果一致、evaluator 所有属性正常
+- 多因子 (6 tests)：3 因子 × 2 场景（PASS 继续 + FAIL 阻断）
+- 边界情况 (3 tests)：空检测报告视为 PASS、不同 return_label 下正常工作、检测参数正确传递给 FutureLeakDetector
+- 关键设计：使用 monkeypatch mock KlineLoader 和 FutureLeakDetector，避免真实数据访问和网络依赖
+- 用法：`python -m pytest tests/test_step45_e2e_integration.py -v` → 26 checks 全部 PASS
+
+
 [2026-04-04 Task 17] feat: 未来函数检测集成到 run_factor_research.py step4.5
 - `run_factor_research.py` 在 step4（对齐）之后、step5（评估）之前新增可选的 step4.5 未来函数检测步骤
 - 新增 `check_leak: bool = False` 参数：启用后执行 FutureLeakDetector 完整检测（静态扫描 + 动态验证）

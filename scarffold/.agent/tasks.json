@@ -105,7 +105,7 @@
   {
     "id": 18,
     "task": "未来函数检测端到端集成测试：验证 step4.5 正确集成、PASS 时流程继续、FAIL 时可选阻断、CLI --check-leak 参数可用",
-    "passes": false,
+    "passes": true,
     "deps": [17]
   },
 
