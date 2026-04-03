@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 6] feat: run_turnover() 分块计算 (283 checks passed)
+- `run_turnover()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐段计算换手率和排名自相关
+- 分块内换手率/排名自相关与全量计算完全一致（diff = 0），跨块边界首行标记为 NaN
+- 使用 `split_into_chunks` 分块 + `merge_chunk_results(..., "turnover"/"rank_autocorr")` 汇总拼接
+- `_merge_turnover`: 拼接换手率 DataFrame，后续块首行设为 NaN（跨块无前序截面）
+- `_merge_rank_autocorr`: 拼接排名自相关 Series，后续块首值设为 NaN（跨块排名不可比）
+- 覆盖 5 种 chunk_size、多种子、含 NaN、小数据集、chunk_size=1、不同 n_groups、向后兼容等场景
+- 用法：`ev = FactorEvaluator(factor, returns, chunk_size=30); ev.run_turnover()` → `ev.turnover`/`ev.rank_autocorr` 与全量一致（边界除外为 NaN）
+
 [2026-04-04 Task 5] feat: run_curves() 分块计算 (68 checks passed)
 - `run_curves()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块构建净值曲线
 - 关键设计：使用 `_raw=True` 参数获取未覆写起始值的 raw cumprod 曲线，通过 `_merge_raw_curves` 缩放拼接后统一覆写起始值为 1.0

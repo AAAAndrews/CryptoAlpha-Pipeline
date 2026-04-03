@@ -32,7 +32,7 @@
   {
     "id": 6,
     "task": "run_turnover() 分块计算：按分块逐段计算换手率和排名自相关，首块无前置持仓时换手率标记为 NaN",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

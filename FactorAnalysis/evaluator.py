@@ -324,11 +324,37 @@ class FactorEvaluator:
         换手率指标：分组换手率 + 因子排名自相关。
         Turnover metrics: quantile group turnover + factor rank autocorrelation.
 
+        当 chunk_size 已设置时，按时间分块逐段计算换手率和排名自相关。
+        跨块边界的换手率/自相关标记为 NaN（无法跨块比较前序截面）。
+        When chunk_size is set, compute turnover and rank autocorrelation per time chunk.
+        Cross-chunk boundary values are marked as NaN (predecessor cross-section unavailable).
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
-        self.turnover = calc_turnover(self.factor, n_groups=self.n_groups)
-        self.rank_autocorr = calc_rank_autocorr(self.factor)
+        if self.chunk_size is None:
+            # 全量模式：原有逻辑 / full mode: original logic
+            self.turnover = calc_turnover(self.factor, n_groups=self.n_groups)
+            self.rank_autocorr = calc_rank_autocorr(self.factor)
+        else:
+            # 分块模式：逐块计算换手率和排名自相关 / chunked mode
+            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+
+            # 逐块计算换手率 / compute turnover per chunk
+            turnover_chunks = [
+                calc_turnover(fc, n_groups=self.n_groups)
+                for fc in factor_chunks
+            ]
+            # 逐块计算排名自相关 / compute rank autocorrelation per chunk
+            autocorr_chunks = [
+                calc_rank_autocorr(fc)
+                for fc in factor_chunks
+            ]
+
+            # 汇总：跨块边界首行设为 NaN / merge: boundary rows set to NaN
+            self.turnover = merge_chunk_results(turnover_chunks, "turnover")
+            self.rank_autocorr = merge_chunk_results(autocorr_chunks, "rank_autocorr")
+
         return self
 
     def run_neutralize(
