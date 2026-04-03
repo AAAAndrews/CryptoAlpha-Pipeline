@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 26] feat: --viz-output CLI 参数集成可视化到 pipeline (19 checks passed)
+- `run_factor_research.py` 新增 `viz_output` 参数（默认 `output/viz/`），CLI 新增 `--viz-output` 参数
+- 新增 Step 7/8 可视化生成步骤：调用 `build_html_report(ev, output_dir, title)` 生成 report.html
+- 路径不存在时自动递归创建（由 `build_html_report` 内部 `mkdir(parents=True, exist_ok=True)` 处理）
+- `--viz-output none` / `--viz-output None` 可跳过可视化（CLI 层转为 `None`）
+- 可视化失败不中断 pipeline（try/except 捕获异常打印 WARNING）
+- 步骤编号从 1/7 更新为 1/8（Step 7 为可视化生成）
+- 添加 `from __future__ import annotations` 支持 Python 3.9 的 `str | None` 类型注解
+- 不影响 evaluator 数值结果（viz_output=None vs 启用可视化的 ICIR/Sharpe 完全一致）
+- 19 项测试：CLI 解析 (5) + 函数签名 (3) + 跳过逻辑 (2) + 生成验证 (3) + 异常处理 (2) + 向后兼容 (3) + 步骤编号 (1)
+- 用法：`python scripts/run_factor_research.py --factor AlphaMomentum --viz-output output/viz/`
+- 用法：`python scripts/run_factor_research.py --factor AlphaMomentum --viz-output none` → 跳过可视化
+
 [2026-04-04 Task 25] feat: HTML 报告组装 build_html_report (26 checks passed)
 - 实现 `report_html.py` 中的 `build_html_report()` 函数，替换 NotImplementedError 骨架
 - 使用 Jinja2 Template 渲染内嵌 HTML 模板，将图表和绩效表格组装为单一自包含 HTML 文件

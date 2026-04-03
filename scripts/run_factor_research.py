@@ -11,6 +11,8 @@ Purpose: 一键串联完整因子投研流程：
 - FactorAnalysis: 绩效检验 / Factor performance evaluation
 """
 
+from __future__ import annotations
+
 import sys
 import os
 import argparse
@@ -48,6 +50,8 @@ def run_factor_research(
     # 未来函数检测参数 / Future leak detection parameters
     check_leak: bool = False,
     leak_block: bool = False,
+    # 可视化输出参数 / Visualization output parameters
+    viz_output: str | None = "output/viz/",
 ):
     """
     执行完整因子投研流程 / Execute the full factor research pipeline.
@@ -70,6 +74,7 @@ def run_factor_research(
         interval: K 线周期 / Kline interval
         check_leak: 是否在评估前执行未来函数检测 / Run future leak detection before evaluation
         leak_block: 检测 FAIL 时是否阻断 pipeline / Block pipeline on detection failure
+        viz_output: 可视化输出目录，None 时跳过可视化 / Visualization output dir, None to skip
 
     Returns / 返回:
         tuple: (evaluator, report) — FactorEvaluator 实例和摘要报告 DataFrame
@@ -86,7 +91,7 @@ def run_factor_research(
 
     # ── Step 1: 数据加载 / Data Loading ──────────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 1/7] Data Loading")
+    print(f"  [Step 1/8] Data Loading")
     print(f"{'─' * 70}")
 
     from Cross_Section_Factor.kline_loader import KlineLoader
@@ -110,7 +115,7 @@ def run_factor_research(
 
     # ── Step 2: 因子计算 / Factor Calculation ────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 2/7] Factor Calculation — {factor_name}")
+    print(f"  [Step 2/8] Factor Calculation — {factor_name}")
     print(f"{'─' * 70}")
 
     from FactorLib import list_factors, get
@@ -133,7 +138,7 @@ def run_factor_research(
 
     # ── Step 3: 收益率计算 / Returns Calculation ─────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 3/7] Returns Calculation — {return_label}")
+    print(f"  [Step 3/8] Returns Calculation — {return_label}")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.returns import calc_returns
@@ -146,7 +151,7 @@ def run_factor_research(
 
     # ── Step 4: 因子对齐 + 数据质量 / Alignment + Quality ────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 4/7] Factor-Returns Alignment + Data Quality")
+    print(f"  [Step 4/8] Factor-Returns Alignment + Data Quality")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.alignment import align_factor_returns
@@ -164,7 +169,7 @@ def run_factor_research(
     # ── Step 4.5: 未来函数检测 / Future Leak Detection (optional) ─
     if check_leak:
         print(f"\n{'─' * 70}")
-        print(f"  [Step 4.5/7] Future Leak Detection — {factor_name}")
+        print(f"  [Step 4.5/8] Future Leak Detection — {factor_name}")
         print(f"{'─' * 70}")
 
         step_start = time.time()
@@ -202,7 +207,7 @@ def run_factor_research(
 
     # ── Step 5: 绩效检验 / Factor Evaluation ─────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 5/7] Factor Evaluation (Tear Sheet)")
+    print(f"  [Step 5/8] Factor Evaluation (Tear Sheet)")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.evaluator import FactorEvaluator
@@ -224,7 +229,7 @@ def run_factor_research(
 
     # ── Step 6: 报告输出 / Report Output ─────────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 6/7] Report Generation")
+    print(f"  [Step 6/8] Report Generation")
     print(f"{'─' * 70}")
 
     report = ev.generate_report()
@@ -249,6 +254,26 @@ def run_factor_research(
     print(f"\n  Full Report DataFrame:")
     print(report.to_string(index=False))
     print(f"{'=' * 70}")
+
+    # ── Step 7: 可视化生成 / Visualization Generation (optional) ──
+    if viz_output is not None:
+        print(f"\n{'─' * 70}")
+        print(f"  [Step 7/8] Visualization — {viz_output}")
+        print(f"{'─' * 70}")
+
+        step_start = time.time()
+
+        try:
+            from FactorAnalysis.visualization import build_html_report
+
+            html = build_html_report(ev, output_dir=viz_output, title=f"{factor_inst.name} — {return_label}")
+            print(f"  HTML report saved to {viz_output}/report.html in {time.time() - step_start:.1f}s")
+        except Exception as e:
+            print(f"  WARNING: Visualization failed: {e}")
+    else:
+        print(f"\n{'─' * 70}")
+        print(f"  [Step 7/8] Visualization — skipped (no --viz-output)")
+        print(f"{'─' * 70}")
 
     return ev, report
 
@@ -381,9 +406,20 @@ def main():
         help="检测 FAIL 时阻断 pipeline / Block pipeline on detection failure",
     )
 
+    # 可视化输出参数 / Visualization output parameters
+    parser.add_argument(
+        "--viz-output", type=str, default="output/viz/",
+        help="可视化输出目录，设为 none 跳过 (default: output/viz/)",
+    )
+
     args = parser.parse_args()
 
     try:
+        # --viz-output "none" → None（跳过可视化）/ Convert "none" string to None
+        viz_dir = args.viz_output
+        if viz_dir is not None and viz_dir.lower() == "none":
+            viz_dir = None
+
         run_factor_research(
             factor_name=args.factor,
             return_label=args.return_label,
@@ -402,6 +438,7 @@ def main():
             interval=args.interval,
             check_leak=args.check_leak,
             leak_block=args.leak_block,
+            viz_output=viz_dir,
         )
     except KeyboardInterrupt:
         print("\n\nUser interrupts and exits the program...")

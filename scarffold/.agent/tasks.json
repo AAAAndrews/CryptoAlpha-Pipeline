@@ -154,7 +154,7 @@
   {
     "id": 26,
     "task": "--viz-output CLI 参数：在 run_factor_research.py 新增 --viz-output 参数（默认 output/viz/），路径不存在时自动创建，集成可视化生成到 pipeline",
-    "passes": false,
+    "passes": true,
     "deps": [25]
   },
   {
