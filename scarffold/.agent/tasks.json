@@ -112,7 +112,7 @@
   {
     "id": 19,
     "task": "创建 FactorAnalysis/visualization/ 模块骨架：新建子包 __init__.py + charts.py + tables.py + report_html.py，配置 matplotlib 中文字体支持",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {

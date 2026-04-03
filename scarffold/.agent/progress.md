@@ -3,6 +3,16 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 19] feat: FactorAnalysis/visualization/ 模块骨架 (24 checks passed)
+- 新增 `FactorAnalysis/visualization/` 子包：`__init__.py` + `charts.py` + `tables.py` + `report_html.py`
+- `charts.py`：`configure_chinese_font()` 自动配置中文字体（按 Windows/Mac/Linux 平台选择候选字体列表），模块加载时自动执行；4 个图表函数骨架（`plot_ic_timeseries`/`plot_group_returns`/`plot_portfolio_curves`/`plot_turnover`），后续 Task 20-23 逐步实现
+- `tables.py`：`_signal_color()` 信号灯颜色逻辑（ICIR > 0.5 绿色 / < 0 红色 / 其他黄色 / None 灰色），`build_summary_table()` 骨架
+- `report_html.py`：内嵌 Jinja2 HTML 模板（含信号灯 CSS），`_fig_to_base64()` 图表转 base64 工具函数，`build_html_report()` 骨架
+- `__init__.py`：统一导出 7 个公共 API（configure_chinese_font + 4 图表 + 表格 + HTML 报告）
+- 8 个测试类 24 项检测：子包结构完整性（4）、中文字体配置（3）、信号灯逻辑（5）、HTML 模板验证（3）、骨架函数 NotImplementedError（7）、__all__ 导出（2）
+- 关键设计：图表函数骨架抛出 NotImplementedError，避免未实现功能被误调用
+- 用法：`from FactorAnalysis.visualization import plot_ic_timeseries, build_html_report` → Task 20-25 实现后可用
+
 [2026-04-04 Task 18] feat: 未来函数检测端到端集成测试 (26 checks passed)
 - 新增 `tests/test_step45_e2e_integration.py`，8 个测试类 26 项检测全面覆盖 step4.5 端到端集成
 - step4.5 集成正确性 (2 tests)：check_leak=True 时 FutureLeakDetector.run() 被调用、check_leak=False 时不导入 check_future_leak 模块
