@@ -3,6 +3,16 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 23] feat: 换手率分布图 plot_turnover (24 checks passed)
+- 实现 `charts.py` 中的 `plot_turnover()` 函数，替换 NotImplementedError 骨架
+- 上子图：分组换手率堆叠面积图（stackplot），各组使用 Set2 colormap 着色 + 均值虚线参考线
+- 下子图：因子排名自相关时间序列线图 + 均值参考线 + 零线
+- 校验：evaluator 为 None / turnover 为 None / 换手率全 NaN 均抛出 ValueError
+- 更新骨架测试：`test_plot_turnover_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 24 项测试：基础功能 (4) + 图表内容 (5) + 文件保存 (3) + 参数验证 (4) + 数据一致性 (3) + 边界情况 (5)
+- 关键设计：使用 stackplot 绘制各组换手率叠加面积图，直观展示整体换手水平变化；排名自相关线图展示因子衰减趋势
+- 用法：`from FactorAnalysis.visualization import plot_turnover` → `fig = plot_turnover(evaluator, output_path="turnover.png")`
+
 [2026-04-04 Task 22] feat: 组合净值曲线图 plot_portfolio_curves (25 checks passed)
 - 实现 `charts.py` 中的 `plot_portfolio_curves()` 函数，替换 NotImplementedError 骨架
 - 上子图：不含手续费 — long_curve（蓝色）/ short_curve（红色）/ hedge_curve（绿色）三条净值曲线

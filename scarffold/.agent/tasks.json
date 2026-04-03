@@ -136,7 +136,7 @@
   {
     "id": 23,
     "task": "换手率分布图：绘制按时间序列的换手率柱状图或面积图，保存 turnover.png",
-    "passes": false,
+    "passes": true,
     "deps": [19]
   },
   {

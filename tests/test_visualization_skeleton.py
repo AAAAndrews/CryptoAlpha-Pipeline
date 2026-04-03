@@ -209,7 +209,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_plot_turnover_raises(self):
         from FactorAnalysis.visualization.charts import plot_turnover
-        with pytest.raises(NotImplementedError):
+        # Task 23 已实现，None evaluator 应抛出 ValueError / Task 23 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             plot_turnover(None)
 
     def test_build_summary_table_raises(self):

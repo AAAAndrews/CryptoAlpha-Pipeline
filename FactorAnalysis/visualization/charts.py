@@ -407,14 +407,16 @@ def plot_portfolio_curves(
 def plot_turnover(
     evaluator,
     output_path: str | None = None,
-    figsize: tuple[float, float] = (12, 4),
+    figsize: tuple[float, float] = (12, 7),
     dpi: int = 150,
 ) -> plt.Figure:
     """
     绘制换手率分布图 / Plot turnover distribution chart.
 
-    按时间序列的换手率柱状图或面积图。
-    Turnover bar chart or area chart by time series.
+    上子图：按时间序列的分组换手率面积图，各组叠加展示整体换手情况。
+    下子图：因子排名自相关时间序列线图 + 均值参考线。
+    Top subplot: stacked area chart of per-group turnover over time.
+    Bottom subplot: factor rank autocorrelation line + mean reference line.
 
     Parameters / 参数:
         evaluator: 已调用 run_turnover() 的 FactorEvaluator 实例
@@ -428,6 +430,75 @@ def plot_turnover(
         plt.Figure — matplotlib Figure 对象 / matplotlib Figure object
 
     Raises / 异常:
-        ValueError: evaluator 尚未调用 run_turnover()
+        ValueError: evaluator 为 None / 尚未调用 run_turnover() / 换手率数据为空
     """
-    raise NotImplementedError("plot_turnover 将在 Task 23 中实现")
+    import numpy as np
+
+    # 校验前置条件 / validate preconditions
+    if evaluator is None:
+        raise ValueError("evaluator 不能为 None")
+    if evaluator.turnover is None:
+        raise ValueError(
+            "evaluator 尚未调用 run_turnover()，请先执行 evaluator.run_turnover()"
+        )
+
+    turnover = evaluator.turnover.dropna(how="all")
+    if len(turnover) == 0:
+        raise ValueError("换手率数据为空，无法绘制图表")
+
+    # --- 两个子图：换手率面积图 + 排名自相关线图 ---
+    # --- Two subplots: turnover area chart + rank autocorrelation line ---
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, dpi=dpi,
+                                    gridspec_kw={"height_ratios": [3, 2]})
+    fig.subplots_adjust(hspace=0.35)
+
+    dates = turnover.index
+
+    # --- 上子图：分组换手率堆叠面积图 / Top subplot: stacked turnover area ---
+    n_groups = len(turnover.columns)
+    # 颜色映射：各组使用不同颜色 / color map: different colors per group
+    cmap = plt.cm.Set2
+    colors = [cmap(i / max(n_groups - 1, 1)) for i in range(n_groups)]
+
+    # 堆叠面积图 / stacked area chart
+    ax1.stackplot(dates, turnover.values.T, labels=[f"第 {int(c) + 1} 组 / Group {int(c) + 1}" for c in turnover.columns],
+                  colors=colors, alpha=0.7)
+
+    # 均值参考线 / mean reference line
+    mean_turnover = float(turnover.mean().mean())
+    ax1.axhline(y=mean_turnover, color="black", linestyle="--", linewidth=1.0,
+                label=f"均值 / Mean = {mean_turnover:.4f}")
+
+    ax1.set_title("分组换手率 / Group Turnover", fontsize=13, fontweight="bold")
+    ax1.set_ylabel("换手率 / Turnover", fontsize=10)
+    ax1.set_ylim(bottom=0)  # 换手率非负 / turnover is non-negative
+    ax1.legend(loc="upper right", fontsize=8)
+    ax1.grid(True, alpha=0.3)
+
+    # --- 下子图：排名自相关线图 / Bottom subplot: rank autocorrelation line ---
+    rank_autocorr = evaluator.rank_autocorr
+    if rank_autocorr is not None and len(rank_autocorr.dropna()) > 0:
+        ra_valid = rank_autocorr.dropna()
+        ax2.plot(ra_valid.index, ra_valid.values, color="steelblue", linewidth=1.0,
+                 label="排名自相关 / Rank Autocorr")
+
+        # 均值参考线 / mean reference line
+        ra_mean = float(ra_valid.mean())
+        ax2.axhline(y=ra_mean, color="darkorange", linestyle="--", linewidth=1.0,
+                    label=f"均值 / Mean = {ra_mean:.4f}")
+
+    # 零线 / zero line
+    ax2.axhline(y=0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax2.set_title("因子排名自相关 / Factor Rank Autocorrelation", fontsize=13, fontweight="bold")
+    ax2.set_xlabel("日期 / Date", fontsize=10)
+    ax2.set_ylabel("自相关系数 / Autocorrelation", fontsize=10)
+    ax2.legend(loc="upper right", fontsize=8)
+    ax2.grid(True, alpha=0.3)
+
+    # 保存图片 / save figure
+    if output_path is not None:
+        fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+        logger.info("换手率分布图已保存: %s", output_path)
+
+    return fig
