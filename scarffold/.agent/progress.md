@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 21] feat: 分组收益对比图 plot_group_returns (24 checks passed)
+- 实现 `charts.py` 中的 `plot_group_returns()` 函数，替换 NotImplementedError 骨架
+- 从 evaluator.group_labels + evaluator.returns 计算各组等权平均日收益，cumprod 累计净值曲线
+- 颜色映射：RdYlGn colormap，低组（红色）→ 高组（绿色），直观展示因子单调性
+- 若 evaluator 已调用 run_curves()，叠加多空对冲净值曲线（黑色虚线）
+- 起始净值归一化（1.0）+ y=1.0 灰色参考线 + 图例 + 网格
+- 参数支持：`output_path`（PNG 保存）、`figsize`、`dpi`
+- 校验：evaluator 为 None / group_labels 为 None / 分组标签全为 NaN 均抛出 ValueError
+- 更新骨架测试：`test_plot_group_returns_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 24 项测试：基础功能 (4) + 图表内容 (5) + 文件保存 (3) + 参数验证 (4) + 数据一致性 (3) + 边界情况 (5)
+- 关键设计：使用 groupby(["timestamp", "label"]).mean().unstack("label") 计算截面内等权收益
+- 用法：`from FactorAnalysis.visualization import plot_group_returns` → `fig = plot_group_returns(evaluator, output_path="group_returns.png")`
+
 [2026-04-04 Task 20] feat: IC 时间序列图 plot_ic_timeseries (23 checks passed)
 - 实现 `charts.py` 中的 `plot_ic_timeseries()` 函数，替换 NotImplementedError 骨架
 - 上子图：日频 IC 柱状图 + 周度滚动 IC (5D) + 月度滚动 IC (22D) + IC 均值虚线 + ±1std 灰色阴影带 + 零线

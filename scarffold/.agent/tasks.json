@@ -124,7 +124,7 @@
   {
     "id": 21,
     "task": "分组收益对比图：绘制按因子分位数（如5组）的累计收益曲线，标注多空对冲收益，保存 group_returns.png",
-    "passes": false,
+    "passes": true,
     "deps": [19]
   },
   {

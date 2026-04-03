@@ -197,7 +197,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_plot_group_returns_raises(self):
         from FactorAnalysis.visualization.charts import plot_group_returns
-        with pytest.raises(NotImplementedError):
+        # Task 21 已实现，None evaluator 应抛出 ValueError / Task 21 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             plot_group_returns(None)
 
     def test_plot_portfolio_curves_raises(self):

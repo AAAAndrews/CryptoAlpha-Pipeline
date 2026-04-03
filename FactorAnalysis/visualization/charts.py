@@ -13,6 +13,7 @@ import logging
 
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -205,9 +206,15 @@ def plot_group_returns(
     按因子分位数（如 5 组）的累计收益曲线，标注多空对冲收益。
     Cumulative return curves by factor quantile groups, with long-short hedge return.
 
+    每组分位数组一条等权累计净值曲线，颜色从低组（红色/冷色）渐变到高组（绿色/暖色）。
+    若 evaluator 已调用 run_curves()，叠加多空对冲净值曲线（黑色虚线）。
+    Each quantile group gets one equal-weighted cumulative NAV curve, color gradient
+    from low group (red/cool) to high group (green/warm). If run_curves() has been
+    called, overlays the long-short hedge curve (black dashed line).
+
     Parameters / 参数:
-        evaluator: 已调用 run_grouping() + run_curves() 的 FactorEvaluator 实例
-                   A FactorEvaluator instance that has called run_grouping() + run_curves()
+        evaluator: 已调用 run_grouping() 的 FactorEvaluator 实例
+                   A FactorEvaluator instance that has called run_grouping()
         output_path: 图片保存路径，None 时不保存
                     Image save path, None to skip saving
         figsize: 图表尺寸 / Figure size
@@ -217,9 +224,77 @@ def plot_group_returns(
         plt.Figure — matplotlib Figure 对象 / matplotlib Figure object
 
     Raises / 异常:
-        ValueError: evaluator 尚未调用 run_grouping() 或 run_curves()
+        ValueError: evaluator 为 None / 未调用 run_grouping() / 分组标签为空
     """
-    raise NotImplementedError("plot_group_returns 将在 Task 21 中实现")
+    import numpy as np
+
+    # 校验前置条件 / validate preconditions
+    if evaluator is None:
+        raise ValueError("evaluator 不能为 None")
+    if evaluator.group_labels is None:
+        raise ValueError(
+            "evaluator 尚未调用 run_grouping()，请先执行 evaluator.run_grouping()"
+        )
+
+    # 构建分组-收益 DataFrame，剔除 NaN 分组标签 / build group-returns DataFrame, drop NaN labels
+    combined = pd.DataFrame({
+        "label": evaluator.group_labels,
+        "returns": evaluator.returns,
+    })
+    combined = combined.dropna(subset=["label"])
+
+    if len(combined) == 0:
+        raise ValueError("分组标签为空，无法绘制图表")
+
+    # 按时间截面 × 分组计算等权平均日收益 / compute equal-weighted daily return per timestamp × group
+    group_daily = (combined
+                   .groupby(["timestamp", "label"])["returns"]
+                   .mean()
+                   .unstack("label"))
+
+    # 按组号排序 / sort by group number
+    group_daily = group_daily.reindex(columns=sorted(group_daily.columns))
+    n_groups = len(group_daily.columns)
+
+    # 累计净值曲线 / cumulative NAV curves
+    group_curves = (1.0 + group_daily).cumprod()
+    if len(group_curves) > 0:
+        group_curves.iloc[0] = 1.0  # 起始净值归一 / normalize start to 1.0
+
+    # --- 绘图 / Plotting ---
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+
+    # 颜色映射：低组红色 → 高组绿色 / color map: low group red → high group green
+    cmap = plt.cm.RdYlGn
+    colors = [cmap(i / max(n_groups - 1, 1)) for i in range(n_groups)]
+
+    dates = group_curves.index
+    for i, col in enumerate(group_curves.columns):
+        group_num = int(col) + 1  # 1-based display
+        ax.plot(dates, group_curves[col].values, color=colors[i], linewidth=1.0,
+                label=f"第 {group_num} 组 / Group {group_num}")
+
+    # 叠加多空对冲净值曲线（若可用）/ overlay long-short hedge curve if available
+    if evaluator.hedge_curve is not None and len(evaluator.hedge_curve) > 0:
+        ax.plot(evaluator.hedge_curve.index, evaluator.hedge_curve.values,
+                color="black", linewidth=1.5, linestyle="--",
+                label="多空对冲 / Long-Short")
+
+    # 起始净值参考线 / start NAV reference line
+    ax.axhline(y=1.0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
+
+    ax.set_title("分组收益对比 / Group Returns Comparison", fontsize=13, fontweight="bold")
+    ax.set_xlabel("日期 / Date", fontsize=10)
+    ax.set_ylabel("累计净值 / Cumulative NAV", fontsize=10)
+    ax.legend(loc="upper left", fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # 保存图片 / save figure
+    if output_path is not None:
+        fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+        logger.info("分组收益对比图已保存: %s", output_path)
+
+    return fig
 
 
 def plot_portfolio_curves(
