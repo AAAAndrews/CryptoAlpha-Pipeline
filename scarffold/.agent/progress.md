@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 25] feat: HTML 报告组装 build_html_report (26 checks passed)
+- 实现 `report_html.py` 中的 `build_html_report()` 函数，替换 NotImplementedError 骨架
+- 使用 Jinja2 Template 渲染内嵌 HTML 模板，将图表和绩效表格组装为单一自包含 HTML 文件
+- 图片以 base64 编码内嵌（`_fig_to_base64()`），无需外部依赖，单文件即可在浏览器中查看
+- 自动检测 evaluator 已执行的子步骤，按需生成 4 种图表：IC 时间序列 / 分组收益 / 净值曲线 / 换手率
+- 未执行的子步骤跳过对应图表（不报错），仅生成绩效表格
+- 参数支持：`output_dir`（保存 report.html）、`title`（自定义标题）、`include_charts`（是否包含图表）
+- `output_dir` 路径不存在时自动递归创建（`mkdir(parents=True, exist_ok=True)`）
+- 校验：evaluator 为 None 或未执行 run_metrics() 均抛出 ValueError
+- 更新骨架测试：`test_build_html_report_raises` 从 NotImplementedError 改为 ValueError（功能已实现）
+- 26 项测试：基础功能 (5) + HTML 内容 (8) + 文件保存 (3) + 参数验证 (2) + 数据一致性 (3) + 边界情况 (5)
+- 关键设计：图表生成包裹在 try/except 中，单个图表失败不影响其余图表和报告生成
+- 用法：`from FactorAnalysis.visualization import build_html_report` → `html = build_html_report(ev, output_dir="output/viz/")`
+
 [2026-04-04 Task 24] feat: 综合绩效表格 build_summary_table (40 checks passed)
 - 实现 `tables.py` 中的 `build_summary_table()` 函数，替换 NotImplementedError 骨架
 - 5 个板块：IC 分析（9 项指标）、收益分析（4 项）、绩效比率（6 项）、换手率（2 项）、中性化（1 项）

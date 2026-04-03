@@ -148,7 +148,7 @@
   {
     "id": 25,
     "task": "HTML 报告组装：使用 Jinja2 模板将图表和绩效表格组装为单一自包含 HTML 文件 report.html（图片 base64 内嵌，无需外部依赖）",
-    "passes": false,
+    "passes": true,
     "deps": [20, 21, 22, 23, 24]
   },
   {

@@ -221,7 +221,8 @@ class TestStubFunctionsRaiseNotImplemented:
 
     def test_build_html_report_raises(self):
         from FactorAnalysis.visualization.report_html import build_html_report
-        with pytest.raises(NotImplementedError):
+        # Task 25 已实现，None evaluator 应抛出 ValueError / Task 25 implemented, None raises ValueError
+        with pytest.raises(ValueError):
             build_html_report(None)
 
     def test_fig_to_base64_not_called_yet(self):

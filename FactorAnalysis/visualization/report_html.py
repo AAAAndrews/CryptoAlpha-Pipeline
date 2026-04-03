@@ -17,6 +17,8 @@ import io
 import logging
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 logger = logging.getLogger(__name__)
 
 # Jinja2 HTML 模板（内嵌） / Jinja2 HTML template (inline)
@@ -120,6 +122,102 @@ def build_html_report(
         str — 生成的 HTML 内容 / Generated HTML content
 
     Raises / 异常:
-        ValueError: evaluator 尚未调用 run()
+        ValueError: evaluator 为 None 或尚未执行分析步骤
     """
-    raise NotImplementedError("build_html_report 将在 Task 25 中实现")
+    from datetime import datetime
+
+    from jinja2 import Template
+
+    from .charts import (
+        plot_ic_timeseries,
+        plot_group_returns,
+        plot_portfolio_curves,
+        plot_turnover,
+    )
+    from .tables import build_summary_table
+
+    # --- 校验前置条件 / validate preconditions ---
+    if evaluator is None:
+        raise ValueError("evaluator 不能为 None / evaluator must not be None")
+    if evaluator.ic is None:
+        raise ValueError(
+            "evaluator 尚未调用 run() 或 run_metrics()，无可用指标 / "
+            "evaluator has not called run() or run_metrics(), no metrics available"
+        )
+
+    # --- 报告标题 / Report title ---
+    if title is None:
+        title = "因子绩效分析报告 / Factor Performance Report"
+
+    # --- 生成时间戳 / Generate timestamp ---
+    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # --- 综合绩效表格 / Summary performance table ---
+    summary_table = build_summary_table(evaluator)
+
+    # --- 图表生成与 base64 编码 / Chart generation and base64 encoding ---
+    ic_chart: str | None = None
+    group_chart: str | None = None
+    portfolio_chart: str | None = None
+    turnover_chart: str | None = None
+
+    if include_charts:
+        # IC 时间序列图（需要 run_metrics）/ IC timeseries (requires run_metrics)
+        if evaluator.ic is not None and len(evaluator.ic.dropna()) > 0:
+            try:
+                fig = plot_ic_timeseries(evaluator)
+                ic_chart = _fig_to_base64(fig)
+                plt.close(fig)
+            except Exception as e:
+                logger.warning("IC 时间序列图生成失败: %s", e)
+
+        # 分组收益图（需要 run_grouping）/ Group returns chart (requires run_grouping)
+        if evaluator.group_labels is not None:
+            try:
+                fig = plot_group_returns(evaluator)
+                group_chart = _fig_to_base64(fig)
+                plt.close(fig)
+            except Exception as e:
+                logger.warning("分组收益图生成失败: %s", e)
+
+        # 净值曲线图（需要 run_curves）/ Portfolio curves chart (requires run_curves)
+        if (evaluator.long_curve is not None
+                and evaluator.short_curve is not None
+                and evaluator.hedge_curve is not None):
+            try:
+                fig = plot_portfolio_curves(evaluator)
+                portfolio_chart = _fig_to_base64(fig)
+                plt.close(fig)
+            except Exception as e:
+                logger.warning("净值曲线图生成失败: %s", e)
+
+        # 换手率图（需要 run_turnover）/ Turnover chart (requires run_turnover)
+        if evaluator.turnover is not None and len(evaluator.turnover.dropna(how="all")) > 0:
+            try:
+                fig = plot_turnover(evaluator)
+                turnover_chart = _fig_to_base64(fig)
+                plt.close(fig)
+            except Exception as e:
+                logger.warning("换手率图生成失败: %s", e)
+
+    # --- Jinja2 模板渲染 / Jinja2 template rendering ---
+    template = Template(_HTML_TEMPLATE)
+    html = template.render(
+        title=title,
+        generated_at=generated_at,
+        summary_table=summary_table,
+        ic_chart=ic_chart,
+        group_chart=group_chart,
+        portfolio_chart=portfolio_chart,
+        turnover_chart=turnover_chart,
+    )
+
+    # --- 保存文件 / Save to file ---
+    if output_dir is not None:
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        report_file = out_path / "report.html"
+        report_file.write_text(html, encoding="utf-8")
+        logger.info("HTML 报告已保存: %s", report_file)
+
+    return html
