@@ -8,7 +8,7 @@
   {
     "id": 2,
     "task": "FactorEvaluator.__init__ 新增 chunk_size 参数：默认 None（全量），设为整数时启用分块模式；新增 chunk_size 属性和 _validate_chunk_size 内部校验",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {

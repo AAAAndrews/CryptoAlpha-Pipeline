@@ -55,6 +55,10 @@ class FactorEvaluator:
                         Annualized risk-free rate, default 0.0
         periods_per_year: 年化交易日数，默认 252
                           Trading periods per year, default 252
+        chunk_size: 分块大小（每个块的时间截面数），默认 None（全量模式）。
+                    设为正整数时启用分块处理以降低内存峰值。
+                    Chunk size (number of timestamps per chunk), default None (full mode).
+                    Set to a positive integer to enable chunked processing for lower memory peak.
     """
 
     def __init__(
@@ -67,6 +71,7 @@ class FactorEvaluator:
         cost_rate: float = 0.001,
         risk_free_rate: float = 0.0,
         periods_per_year: int = 252,
+        chunk_size: int | None = None,
     ):
         self.factor = factor
         self.returns = returns
@@ -76,6 +81,7 @@ class FactorEvaluator:
         self.cost_rate = cost_rate
         self.risk_free_rate = risk_free_rate
         self.periods_per_year = periods_per_year
+        self.chunk_size = self._validate_chunk_size(chunk_size)
 
         # IC 指标 / IC metrics
         self.ic: pd.Series | None = None
@@ -108,6 +114,47 @@ class FactorEvaluator:
 
         # 中性化净值曲线 / Neutralized equity curve
         self.neutralized_curve: pd.Series | None = None
+
+    # --- 内部校验 / Internal validation ---
+
+    @staticmethod
+    def _validate_chunk_size(chunk_size: int | None) -> int | None:
+        """
+        校验 chunk_size 参数合法性 / Validate chunk_size parameter.
+
+        - None: 合法，表示全量模式 / Valid, means full (non-chunked) mode
+        - 正整数: 合法 / Valid positive integer
+        - 0、负数、浮点数: 抛出 ValueError / Raises ValueError for 0, negative, or non-integer
+
+        Parameters / 参数:
+            chunk_size: 待校验的分块大小 / Chunk size to validate
+
+        Returns / 返回:
+            int | None: 校验后的值 / Validated value
+
+        Raises / 异常:
+            ValueError: chunk_size 不是正整数或 None
+            TypeError: chunk_size 是浮点数（非整数值）
+        """
+        if chunk_size is None:
+            return None
+        # 浮点数类型检查：排除 3.0 这类隐式整数 / reject float even if value is integer-like
+        if isinstance(chunk_size, float):
+            if not chunk_size.is_integer():
+                raise ValueError(
+                    f"chunk_size 必须为正整数或 None，当前值: {chunk_size}"
+                )
+            # 隐式整数转正 / convert implicit integer to int
+            chunk_size = int(chunk_size)
+        if not isinstance(chunk_size, int) or isinstance(chunk_size, bool):
+            raise TypeError(
+                f"chunk_size 必须为 int 或 None，当前类型: {type(chunk_size).__name__}"
+            )
+        if chunk_size < 1:
+            raise ValueError(
+                f"chunk_size 必须 >= 1 或为 None，当前值: {chunk_size}"
+            )
+        return chunk_size
 
     # --- 子分析步骤 / Sub-analysis steps ---
 
