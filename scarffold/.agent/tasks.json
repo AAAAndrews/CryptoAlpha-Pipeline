@@ -38,7 +38,7 @@
   {
     "id": 7,
     "task": "run_neutralize() 分块支持：分块内中性化因子覆盖完整截面，组内去均值/收益调整在每块内独立执行",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

@@ -367,6 +367,13 @@ class FactorEvaluator:
         """
         分组中性化净值曲线 / Group-neutralized equity curve.
 
+        当 chunk_size 已设置时，按时间分块逐块执行中性化处理，
+        使用 raw 曲线（不覆写起始值）合并后统一覆写起始值为 1.0，
+        确保与全量计算数值一致。
+        When chunk_size is set, execute neutralization per time chunk,
+        using raw curves (without overwriting start value), merge, then
+        overwrite start to 1.0, ensuring numerical consistency with full calculation.
+
         Parameters / 参数:
             groups: 中性化分组，None 时使用 self.n_groups
                     Neutralization groups, defaults to self.n_groups when None
@@ -384,10 +391,38 @@ class FactorEvaluator:
             groups = self.n_groups
         if n_groups is None:
             n_groups = self.n_groups
-        self.neutralized_curve = calc_neutralized_curve(
-            self.factor, self.returns,
-            groups=groups, demeaned=demeaned, group_adjust=group_adjust, n_groups=n_groups,
-        )
+
+        if self.chunk_size is None:
+            # 全量模式：原有逻辑 / full mode: original logic
+            self.neutralized_curve = calc_neutralized_curve(
+                self.factor, self.returns,
+                groups=groups, demeaned=demeaned, group_adjust=group_adjust, n_groups=n_groups,
+            )
+        else:
+            # 分块模式：逐块计算 raw 中性化曲线后合并 / chunked mode: per-chunk raw curves then merge
+            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+
+            # 当 groups 为 pd.Series 时也需要分块 / split groups Series if provided
+            if isinstance(groups, pd.Series):
+                groups_chunks = split_into_chunks(groups, self.chunk_size)
+            else:
+                groups_chunks = [groups] * len(factor_chunks)
+
+            neutralized_chunks = [
+                calc_neutralized_curve(
+                    fc, rc,
+                    groups=gc, demeaned=demeaned, group_adjust=group_adjust,
+                    n_groups=n_groups, _raw=True,
+                )
+                for fc, rc, gc in zip(factor_chunks, returns_chunks, groups_chunks)
+            ]
+
+            # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
+            self.neutralized_curve = _merge_raw_curves(neutralized_chunks)
+            if len(self.neutralized_curve) > 0:
+                self.neutralized_curve.iloc[0] = 1.0
+
         return self
 
     # --- 编排方法 / Orchestration methods ---

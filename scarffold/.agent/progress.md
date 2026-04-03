@@ -3,6 +3,14 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 7] feat: run_neutralize() 分块计算 (39 checks passed)
+- `run_neutralize()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块执行中性化处理
+- `calc_neutralized_curve` 新增 `_raw=False` 内部参数，`_raw=True` 时不覆写起始值为 1.0（用于分块合并）
+- 使用 `_merge_raw_curves` 缩放拼接各块 raw 曲线后统一覆写起始值为 1.0，与全量计算数值一致（diff < 1e-14）
+- 当 `groups` 参数为 pd.Series 时，同步分块 groups 数据以保持截面完整性
+- 覆盖 demeaned/group_adjust 组合、5 种 chunk_size、多种子、含 NaN、小数据集、chunk_size=1、不同 n_groups、自定义 groups、向后兼容等场景
+- 用法：`ev = FactorEvaluator(factor, returns, chunk_size=30); ev.run_neutralize()` → `ev.neutralized_curve` 与全量一致
+
 [2026-04-04 Task 6] feat: run_turnover() 分块计算 (283 checks passed)
 - `run_turnover()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐段计算换手率和排名自相关
 - 分块内换手率/排名自相关与全量计算完全一致（diff = 0），跨块边界首行标记为 NaN

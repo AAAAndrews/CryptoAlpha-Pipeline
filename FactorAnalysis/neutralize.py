@@ -19,6 +19,7 @@ def calc_neutralized_curve(
     demeaned: bool = True,
     group_adjust: bool = False,
     n_groups: int = 5,
+    _raw: bool = False,
 ) -> pd.Series:
     """
     分组中性化后构建多空组合净值曲线 / Build group-neutralized long-short equity curve.
@@ -44,8 +45,8 @@ def calc_neutralized_curve(
                       Whether to adjust returns within groups, default False
         n_groups: 中性化后排名分组的数量，默认 5
                   Number of ranking groups after neutralization, default 5
-
-    Returns / 返回:
+        _raw: 内部参数，为 True 时不覆写起始值为 1.0（用于分块合并场景）
+              Internal param; when True, skip overwriting start to 1.0 (for chunked merging)
         pd.Series: 多空对冲净值曲线，index=timestamp，起始值 1.0
                    Long-short hedged equity curve, index=timestamp, starting at 1.0
 
@@ -143,5 +144,6 @@ def calc_neutralized_curve(
 
     # 累积净值 / Cumulative equity
     equity = (1.0 + daily_returns).cumprod()
-    equity.iloc[0] = 1.0  # 确保起始值为 1.0 / Ensure start value is 1.0
+    if not _raw:
+        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / Ensure start value is 1.0
     return equity
