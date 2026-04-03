@@ -44,7 +44,7 @@
   {
     "id": 8,
     "task": "内存监控日志集成：分块处理时使用 psutil/tracemalloc 输出每块峰值内存，写入 logger 便于调优 chunk_size",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

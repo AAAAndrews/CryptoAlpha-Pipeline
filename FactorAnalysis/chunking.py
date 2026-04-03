@@ -5,8 +5,19 @@ FactorAnalysis/chunking.py — 分块处理核心逻辑 / Chunked Processing Cor
 Time-based chunking and result aggregation for memory optimization on large samples.
 """
 
+import logging
+import tracemalloc
+
 import numpy as np
 import pandas as pd
+
+try:
+    import psutil
+    _HAS_PSUTIL = True
+except ImportError:
+    _HAS_PSUTIL = False
+
+logger = logging.getLogger(__name__)
 
 
 def split_into_chunks(
@@ -258,3 +269,63 @@ def _merge_ic_stats(chunk_results: list) -> pd.Series:
         "IC_std": overall_std,
         "ICIR": overall_icir,
     })
+
+
+# ============================================================
+# 内存监控 / Memory monitoring
+# ============================================================
+
+
+class ChunkMemoryTracker:
+    """
+    分块内存监控上下文管理器 / Chunk memory tracking context manager.
+
+    使用 tracemalloc 追踪每块的 Python 堆内存峰值，
+    可选使用 psutil 获取进程 RSS 内存，结果写入 logger。
+    Tracks peak Python heap memory per chunk via tracemalloc,
+    optionally gets process RSS via psutil, logs results.
+
+    Parameters / 参数:
+        chunk_idx: 当前块索引（从 0 开始）/ Current chunk index (0-based)
+        total_chunks: 总块数 / Total number of chunks
+        description: 操作描述，用于日志 / Operation description for logging
+
+    Attributes / 属性:
+        peak_mb: 本块 tracemalloc 峰值内存 (MB) / tracemalloc peak memory (MB)
+        rss_mb: 本块结束时进程 RSS 内存 (MB)，需 psutil / Process RSS at chunk end (MB), requires psutil
+
+    Example / 示例:
+        with ChunkMemoryTracker(0, 5, description="run_metrics"):
+            result = process_chunk(data)
+        # logger.info: [chunk 1/5] run_metrics | peak_alloc=12.34 MB, RSS=45.67 MB
+    """
+
+    def __init__(self, chunk_idx: int, total_chunks: int, description: str = "chunk"):
+        self.chunk_idx = chunk_idx
+        self.total_chunks = total_chunks
+        self.description = description
+        self.peak_mb: float | None = None
+        self.rss_mb: float | None = None
+
+    def __enter__(self) -> "ChunkMemoryTracker":
+        # 确保 tracemalloc 已启动 / ensure tracemalloc is running
+        if not tracemalloc.is_tracing():
+            tracemalloc.start()
+        tracemalloc.reset_peak()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        _, peak = tracemalloc.get_traced_memory()
+        self.peak_mb = peak / 1024 / 1024
+
+        msg = (
+            f"[chunk {self.chunk_idx + 1}/{self.total_chunks}] "
+            f"{self.description} | "
+            f"peak_alloc={self.peak_mb:.2f} MB"
+        )
+
+        if _HAS_PSUTIL:
+            self.rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+            msg += f", RSS={self.rss_mb:.2f} MB"
+
+        logger.info(msg)

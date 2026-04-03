@@ -3,6 +3,16 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 8] feat: 内存监控日志集成 ChunkMemoryTracker (8 tests passed)
+- `chunking.py` 新增 `ChunkMemoryTracker` 上下文管理器：使用 `tracemalloc` 追踪每块 Python 堆内存峰值，可选 `psutil` 获取进程 RSS
+- 日志输出格式：`[chunk i/N] description | peak_alloc=X.XX MB, RSS=X.XX MB`，写入 `FactorAnalysis.chunking` logger
+- `__enter__` 自动启动 tracemalloc 并重置峰值，`__exit__` 获取峰值并记录日志，异常时仍正常输出
+- `evaluator.py` 五个分块方法（run_metrics/run_grouping/run_curves/run_turnover/run_neutralize）全部集成内存监控
+- 分块循环从列表推导式改为显式 for 循环 + `ChunkMemoryTracker`，每块迭代输出一条内存日志
+- psutil 为可选依赖，不可用时仅输出 tracemalloc 峰值，不报错
+- 用法：`with ChunkMemoryTracker(0, 5, description="run_metrics"): process_chunk(data)` → logger.info 输出内存信息
+- 调优 chunk_size：观察各块 peak_alloc 日志，选择使峰值内存保持在目标范围内的 chunk_size 值
+
 [2026-04-04 Task 7] feat: run_neutralize() 分块计算 (39 checks passed)
 - `run_neutralize()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块执行中性化处理
 - `calc_neutralized_curve` 新增 `_raw=False` 内部参数，`_raw=True` 时不覆写起始值为 1.0（用于分块合并）

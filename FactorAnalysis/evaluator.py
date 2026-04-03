@@ -31,7 +31,7 @@ from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bot
 from .cost import deduct_cost
 from .turnover import calc_turnover, calc_rank_autocorr
 from .neutralize import calc_neutralized_curve
-from .chunking import split_into_chunks, merge_chunk_results
+from .chunking import split_into_chunks, merge_chunk_results, ChunkMemoryTracker
 
 
 class FactorEvaluator:
@@ -186,14 +186,15 @@ class FactorEvaluator:
             # 分块模式 / chunked mode
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
             returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            n_chunks = len(factor_chunks)
 
-            # 逐块计算 IC / RankIC / compute IC per chunk
-            ic_chunks = [
-                calc_ic(fc, rc) for fc, rc in zip(factor_chunks, returns_chunks)
-            ]
-            rank_ic_chunks = [
-                calc_rank_ic(fc, rc) for fc, rc in zip(factor_chunks, returns_chunks)
-            ]
+            # 逐块计算 IC / RankIC，带内存监控 / compute IC per chunk with memory tracking
+            ic_chunks = []
+            rank_ic_chunks = []
+            for i, (fc, rc) in enumerate(zip(factor_chunks, returns_chunks)):
+                with ChunkMemoryTracker(i, n_chunks, description="run_metrics"):
+                    ic_chunks.append(calc_ic(fc, rc))
+                    rank_ic_chunks.append(calc_rank_ic(fc, rc))
 
             # 汇总 IC 序列（各时间截面独立，直接拼接）/ merge IC series
             self.ic = merge_chunk_results(ic_chunks, "ic")
@@ -224,12 +225,15 @@ class FactorEvaluator:
             # 全量模式：原有逻辑 / full mode: original logic
             self.group_labels = quantile_group(self.factor, n_groups=self.n_groups)
         else:
-            # 分块模式：逐块计算分组标签 / chunked mode: per-chunk grouping
+            # 分块模式：逐块计算分组标签，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
-            chunk_labels = [
-                quantile_group(fc, n_groups=self.n_groups)
-                for fc in factor_chunks
-            ]
+            n_chunks = len(factor_chunks)
+            chunk_labels = []
+            for i, fc in enumerate(factor_chunks):
+                with ChunkMemoryTracker(i, n_chunks, description="run_grouping"):
+                    chunk_labels.append(
+                        quantile_group(fc, n_groups=self.n_groups)
+                    )
             # 分组标签按时间截面独立，直接拼接 / labels independent per timestamp, concat
             self.group_labels = merge_chunk_results(chunk_labels, "ic")
 
@@ -266,24 +270,27 @@ class FactorEvaluator:
                 n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
             )
         else:
-            # 分块模式：逐块计算 raw 曲线后合并 / chunked mode: per-chunk raw curves then merge
+            # 分块模式：逐块计算 raw 曲线后合并，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
             returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            n_chunks = len(factor_chunks)
 
             # 逐块计算 raw 净值曲线 / compute raw equity curves per chunk
-            long_chunks = [
-                calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k, _raw=True)
-                for fc, rc in zip(factor_chunks, returns_chunks)
-            ]
-            short_chunks = [
-                calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k, _raw=True)
-                for fc, rc in zip(factor_chunks, returns_chunks)
-            ]
-            hedge_chunks = [
-                calc_top_bottom_curve(fc, rc, n_groups=self.n_groups,
-                                      top_k=self.top_k, bottom_k=self.bottom_k, _raw=True)
-                for fc, rc in zip(factor_chunks, returns_chunks)
-            ]
+            long_chunks = []
+            short_chunks = []
+            hedge_chunks = []
+            for i, (fc, rc) in enumerate(zip(factor_chunks, returns_chunks)):
+                with ChunkMemoryTracker(i, n_chunks, description="run_curves"):
+                    long_chunks.append(
+                        calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k, _raw=True)
+                    )
+                    short_chunks.append(
+                        calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k, _raw=True)
+                    )
+                    hedge_chunks.append(
+                        calc_top_bottom_curve(fc, rc, n_groups=self.n_groups,
+                                              top_k=self.top_k, bottom_k=self.bottom_k, _raw=True)
+                    )
 
             # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
             self.long_curve = _merge_raw_curves(long_chunks)
@@ -337,19 +344,17 @@ class FactorEvaluator:
             self.turnover = calc_turnover(self.factor, n_groups=self.n_groups)
             self.rank_autocorr = calc_rank_autocorr(self.factor)
         else:
-            # 分块模式：逐块计算换手率和排名自相关 / chunked mode
+            # 分块模式：逐块计算换手率和排名自相关，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            n_chunks = len(factor_chunks)
 
-            # 逐块计算换手率 / compute turnover per chunk
-            turnover_chunks = [
-                calc_turnover(fc, n_groups=self.n_groups)
-                for fc in factor_chunks
-            ]
-            # 逐块计算排名自相关 / compute rank autocorrelation per chunk
-            autocorr_chunks = [
-                calc_rank_autocorr(fc)
-                for fc in factor_chunks
-            ]
+            # 逐块计算换手率和排名自相关 / compute turnover and rank autocorrelation per chunk
+            turnover_chunks = []
+            autocorr_chunks = []
+            for i, fc in enumerate(factor_chunks):
+                with ChunkMemoryTracker(i, n_chunks, description="run_turnover"):
+                    turnover_chunks.append(calc_turnover(fc, n_groups=self.n_groups))
+                    autocorr_chunks.append(calc_rank_autocorr(fc))
 
             # 汇总：跨块边界首行设为 NaN / merge: boundary rows set to NaN
             self.turnover = merge_chunk_results(turnover_chunks, "turnover")
@@ -399,7 +404,7 @@ class FactorEvaluator:
                 groups=groups, demeaned=demeaned, group_adjust=group_adjust, n_groups=n_groups,
             )
         else:
-            # 分块模式：逐块计算 raw 中性化曲线后合并 / chunked mode: per-chunk raw curves then merge
+            # 分块模式：逐块计算 raw 中性化曲线后合并，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
             returns_chunks = split_into_chunks(self.returns, self.chunk_size)
 
@@ -409,14 +414,17 @@ class FactorEvaluator:
             else:
                 groups_chunks = [groups] * len(factor_chunks)
 
-            neutralized_chunks = [
-                calc_neutralized_curve(
-                    fc, rc,
-                    groups=gc, demeaned=demeaned, group_adjust=group_adjust,
-                    n_groups=n_groups, _raw=True,
-                )
-                for fc, rc, gc in zip(factor_chunks, returns_chunks, groups_chunks)
-            ]
+            n_chunks = len(factor_chunks)
+            neutralized_chunks = []
+            for i, (fc, rc, gc) in enumerate(zip(factor_chunks, returns_chunks, groups_chunks)):
+                with ChunkMemoryTracker(i, n_chunks, description="run_neutralize"):
+                    neutralized_chunks.append(
+                        calc_neutralized_curve(
+                            fc, rc,
+                            groups=gc, demeaned=demeaned, group_adjust=group_adjust,
+                            n_groups=n_groups, _raw=True,
+                        )
+                    )
 
             # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
             self.neutralized_curve = _merge_raw_curves(neutralized_chunks)

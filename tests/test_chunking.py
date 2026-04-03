@@ -15,6 +15,7 @@ from FactorAnalysis.chunking import (
     _merge_turnover,
     _merge_rank_autocorr,
     _merge_ic_stats,
+    ChunkMemoryTracker,
 )
 
 
@@ -527,3 +528,142 @@ class TestEndToEnd:
         chunks = split_into_chunks(data, chunk_size=10)
         total_rows = sum(len(c) for c in chunks)
         assert total_rows == len(data)
+
+
+# ============================================================
+# 10. ChunkMemoryTracker 内存监控 / ChunkMemoryTracker memory monitoring
+# ============================================================
+
+class TestChunkMemoryTracker:
+    """ChunkMemoryTracker 分块内存监控测试 / ChunkMemoryTracker memory tracking tests."""
+
+    def test_tracker_records_peak_mb(self):
+        """tracker 退出后记录 peak_mb / tracker records peak_mb after exit."""
+        import tracemalloc
+        # 确保 tracemalloc 停止以便测试从零开始 / ensure clean state
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        with ChunkMemoryTracker(0, 3, description="test") as tracker:
+            # 分配一些内存以产生可观测的峰值 / allocate memory for observable peak
+            _ = [bytes(1024 * 1024) for _ in range(5)]  # 5 MB
+
+        assert tracker.peak_mb is not None
+        assert tracker.peak_mb > 0
+
+    def test_tracker_records_rss_mb_when_psutil_available(self):
+        """psutil 可用时 tracker 记录 rss_mb / tracker records rss_mb when psutil is available."""
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        from FactorAnalysis import chunking
+        has_psutil = getattr(chunking, "_HAS_PSUTIL", False)
+
+        with ChunkMemoryTracker(0, 1, description="test") as tracker:
+            pass
+
+        if has_psutil:
+            assert tracker.rss_mb is not None
+            assert tracker.rss_mb > 0
+        else:
+            assert tracker.rss_mb is None
+
+    def test_tracker_returns_self_on_enter(self):
+        """__enter__ 返回 self / __enter__ returns self."""
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        with ChunkMemoryTracker(2, 5, description="test") as tracker:
+            assert tracker.chunk_idx == 2
+            assert tracker.total_chunks == 5
+            assert tracker.description == "test"
+
+    def test_tracker_log_output(self, caplog):
+        """tracker 输出 INFO 级别日志 / tracker outputs INFO level log."""
+        import logging
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        with caplog.at_level(logging.INFO, logger="FactorAnalysis.chunking"):
+            with ChunkMemoryTracker(0, 3, description="run_metrics"):
+                pass
+
+        # 验证日志输出包含关键信息 / verify log contains key info
+        assert any("[chunk 1/3]" in r.message for r in caplog.records)
+        assert any("run_metrics" in r.message for r in caplog.records)
+        assert any("peak_alloc=" in r.message for r in caplog.records)
+
+    def test_tracker_log_contains_rss_when_psutil(self, caplog):
+        """psutil 可用时日志包含 RSS 信息 / log contains RSS when psutil is available."""
+        import logging
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        from FactorAnalysis import chunking
+        has_psutil = getattr(chunking, "_HAS_PSUTIL", False)
+
+        with caplog.at_level(logging.INFO, logger="FactorAnalysis.chunking"):
+            with ChunkMemoryTracker(1, 2, description="test"):
+                pass
+
+        rss_in_logs = any("RSS=" in r.message for r in caplog.records)
+        assert rss_in_logs == has_psutil
+
+    def test_tracker_multiple_chunks(self, caplog):
+        """多块连续追踪产生多条日志 / multiple chunks produce multiple log entries."""
+        import logging
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        with caplog.at_level(logging.INFO, logger="FactorAnalysis.chunking"):
+            for i in range(3):
+                with ChunkMemoryTracker(i, 3, description="batch"):
+                    _ = list(range(100))
+
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) >= 3
+        # 验证块编号递增 / verify chunk index increments
+        assert any("[chunk 1/3]" in r.message for r in info_records)
+        assert any("[chunk 2/3]" in r.message for r in info_records)
+        assert any("[chunk 3/3]" in r.message for r in info_records)
+
+    def test_tracker_handles_exception_gracefully(self, caplog):
+        """tracker 在异常时仍记录日志 / tracker still logs on exception."""
+        import logging
+        import tracemalloc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        with caplog.at_level(logging.INFO, logger="FactorAnalysis.chunking"):
+            try:
+                with ChunkMemoryTracker(0, 1, description="fail_test"):
+                    raise ValueError("test error")
+            except ValueError:
+                pass
+
+        # 即使异常也应输出日志 / log should still be emitted even on exception
+        assert any("fail_test" in r.message for r in caplog.records)
+
+    def test_tracker_with_large_allocation(self):
+        """大内存分配时 peak_mb 显著增长 / peak_mb grows significantly with large allocation."""
+        import tracemalloc
+        import gc
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+
+        # 先测量基线 / measure baseline first
+        with ChunkMemoryTracker(0, 1, description="baseline") as t1:
+            pass
+        baseline = t1.peak_mb
+        gc.collect()
+
+        # 再测量分配后 / measure after allocation
+        with ChunkMemoryTracker(0, 1, description="alloc") as t2:
+            _ = [bytearray(1024 * 1024) for _ in range(10)]  # ~10 MB
+
+        assert t2.peak_mb > baseline
