@@ -1,9 +1,9 @@
 """
 Script: 端到端因子投研编排脚本 / End-to-end factor research orchestration script.
 Purpose: 一键串联完整因子投研流程：
-         数据加载 → 收益率计算 → 因子计算 → 因子对齐 → 绩效检验 → 报告输出
+         数据加载 → 收益率计算 → 因子计算 → 因子对齐 → [未来函数检测] → 绩效检验 → 报告输出
          One-command execution of the full factor research pipeline:
-         Data loading → Returns calculation → Factor calculation → Alignment → Evaluation → Report
+         Data loading → Returns calculation → Factor calculation → Alignment → [Future leak check] → Evaluation → Report
 
 依赖 / Dependencies:
 - Cross_Section_Factor: KlineLoader 数据加载 / Data loading
@@ -45,6 +45,9 @@ def run_factor_research(
     exchange: str = "binance",
     kline_type: str = "swap",
     interval: str = "1h",
+    # 未来函数检测参数 / Future leak detection parameters
+    check_leak: bool = False,
+    leak_block: bool = False,
 ):
     """
     执行完整因子投研流程 / Execute the full factor research pipeline.
@@ -65,6 +68,8 @@ def run_factor_research(
         exchange: 交易所名称 / Exchange name
         kline_type: K 线类型 / Kline type
         interval: K 线周期 / Kline interval
+        check_leak: 是否在评估前执行未来函数检测 / Run future leak detection before evaluation
+        leak_block: 检测 FAIL 时是否阻断 pipeline / Block pipeline on detection failure
 
     Returns / 返回:
         tuple: (evaluator, report) — FactorEvaluator 实例和摘要报告 DataFrame
@@ -81,7 +86,7 @@ def run_factor_research(
 
     # ── Step 1: 数据加载 / Data Loading ──────────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 1/6] Data Loading")
+    print(f"  [Step 1/7] Data Loading")
     print(f"{'─' * 70}")
 
     from Cross_Section_Factor.kline_loader import KlineLoader
@@ -105,7 +110,7 @@ def run_factor_research(
 
     # ── Step 2: 因子计算 / Factor Calculation ────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 2/6] Factor Calculation — {factor_name}")
+    print(f"  [Step 2/7] Factor Calculation — {factor_name}")
     print(f"{'─' * 70}")
 
     from FactorLib import list_factors, get
@@ -128,7 +133,7 @@ def run_factor_research(
 
     # ── Step 3: 收益率计算 / Returns Calculation ─────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 3/6] Returns Calculation — {return_label}")
+    print(f"  [Step 3/7] Returns Calculation — {return_label}")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.returns import calc_returns
@@ -141,7 +146,7 @@ def run_factor_research(
 
     # ── Step 4: 因子对齐 + 数据质量 / Alignment + Quality ────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 4/6] Factor-Returns Alignment + Data Quality")
+    print(f"  [Step 4/7] Factor-Returns Alignment + Data Quality")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.alignment import align_factor_returns
@@ -156,9 +161,48 @@ def run_factor_research(
     )
     print(f"  Data quality coverage: {coverage:.1%}")
 
+    # ── Step 4.5: 未来函数检测 / Future Leak Detection (optional) ─
+    if check_leak:
+        print(f"\n{'─' * 70}")
+        print(f"  [Step 4.5/7] Future Leak Detection — {factor_name}")
+        print(f"{'─' * 70}")
+
+        step_start = time.time()
+
+        # 延迟导入避免循环依赖 / Lazy import to avoid circular dependency
+        from scripts.check_future_leak import FutureLeakDetector
+
+        detector = FutureLeakDetector()
+        leak_report = detector.run(
+            factor_name=factor_name,
+            return_label=return_label,
+            start_time=start_time,
+            end_time=end_time,
+            symbols=symbols,
+            exchange=exchange,
+            kline_type=kline_type,
+            interval=interval,
+        )
+
+        print(f"  Detection completed in {time.time() - step_start:.1f}s")
+
+        # 检测 FAIL 且阻断模式 / FAIL with block mode
+        if not leak_report.all_passed:
+            n_fail = leak_report.n_fail
+            print(f"\n  WARNING: Future leak detection FAILED ({n_fail} checks)")
+            if leak_block:
+                print("  Pipeline blocked by --leak-block. Aborting.")
+                return None, None
+            else:
+                print("  Continuing pipeline (--leak-block not set).")
+        else:
+            print(f"  All {leak_report.n_pass} checks PASSED.")
+    else:
+        leak_report = None
+
     # ── Step 5: 绩效检验 / Factor Evaluation ─────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 5/6] Factor Evaluation (Tear Sheet)")
+    print(f"  [Step 5/7] Factor Evaluation (Tear Sheet)")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.evaluator import FactorEvaluator
@@ -180,7 +224,7 @@ def run_factor_research(
 
     # ── Step 6: 报告输出 / Report Output ─────────────────────────
     print(f"\n{'─' * 70}")
-    print(f"  [Step 6/6] Report Generation")
+    print(f"  [Step 6/7] Report Generation")
     print(f"{'─' * 70}")
 
     report = ev.generate_report()
@@ -327,6 +371,16 @@ def main():
         help="K 线周期 (default: 1h)",
     )
 
+    # 未来函数检测参数 / Future leak detection parameters
+    parser.add_argument(
+        "--check-leak", action="store_true", default=False,
+        help="在评估前执行未来函数检测 / Run future leak detection before evaluation",
+    )
+    parser.add_argument(
+        "--leak-block", action="store_true", default=False,
+        help="检测 FAIL 时阻断 pipeline / Block pipeline on detection failure",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -346,6 +400,8 @@ def main():
             exchange=args.exchange,
             kline_type=args.kline_type,
             interval=args.interval,
+            check_leak=args.check_leak,
+            leak_block=args.leak_block,
         )
     except KeyboardInterrupt:
         print("\n\nUser interrupts and exits the program...")

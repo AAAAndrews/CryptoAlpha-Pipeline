@@ -99,7 +99,7 @@
   {
     "id": 17,
     "task": "集成到 run_factor_research.py：在 step4（对齐）之后、step5（评估）之前新增 step4.5 未来函数检测可选步骤，检测 FAIL 时可选阻断 pipeline",
-    "passes": false,
+    "passes": true,
     "deps": [15]
   },
   {

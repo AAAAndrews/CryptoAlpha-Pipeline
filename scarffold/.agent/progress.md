@@ -3,6 +3,18 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 17] feat: 未来函数检测集成到 run_factor_research.py step4.5
+- `run_factor_research.py` 在 step4（对齐）之后、step5（评估）之前新增可选的 step4.5 未来函数检测步骤
+- 新增 `check_leak: bool = False` 参数：启用后执行 FutureLeakDetector 完整检测（静态扫描 + 动态验证）
+- 新增 `leak_block: bool = False` 参数：检测 FAIL 时阻断 pipeline（返回 None, None），不设则仅打印 WARNING 继续
+- CLI 新增 `--check-leak`（store_true）和 `--leak-block`（store_true）两个参数
+- 步骤编号从 1/6 更新为 1/7（step 4.5 插入后总步骤 +1）
+- 导入方式：延迟导入 `from scripts.check_future_leak import FutureLeakDetector`，避免循环依赖
+- 检测通过时打印 PASSED 信息；失败时根据 leak_block 决定阻断或继续
+- 向后兼容：不传 --check-leak 时行为与改造前完全一致
+- 用法：`python scripts/run_factor_research.py --factor AlphaMomentum --check-leak` → step4.5 执行检测
+- 用法：`python scripts/run_factor_research.py --factor AlphaMomentum --check-leak --leak-block` → 检测 FAIL 时阻断 pipeline
+
 [2026-04-04 Task 16] feat: 未来函数检测验证测试 (43 checks passed)
 - 新增 `tests/test_future_leak_detection.py`，8 个测试类 43 项检测全面覆盖未来函数检测脚本
 - 静态扫描验证 (3 tests)：FactorLib 无 shift(-N)、shift(-N) 仅在允许文件中、KlineLoader 无 shift
