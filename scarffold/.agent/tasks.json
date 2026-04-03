@@ -14,7 +14,7 @@
   {
     "id": 3,
     "task": "run_metrics() IC/IR 分块计算：按时间 chunk 逐块计算 pearson/spearman IC 序列，汇总 IC_mean、IC_std、ICIR 等聚合统计量，数值差异 < 1e-8",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

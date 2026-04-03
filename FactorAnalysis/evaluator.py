@@ -16,8 +16,11 @@ supporting selective execution and flexible combination.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 from .metrics import (
     calc_ic, calc_rank_ic, calc_icir, calc_sharpe, calc_calmar, calc_sortino,
@@ -28,6 +31,7 @@ from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bot
 from .cost import deduct_cost
 from .turnover import calc_turnover, calc_rank_autocorr
 from .neutralize import calc_neutralized_curve
+from .chunking import split_into_chunks, merge_chunk_results
 
 
 class FactorEvaluator:
@@ -163,13 +167,43 @@ class FactorEvaluator:
         IC 分析：计算 IC / Rank IC / ICIR / IC 统计显著性。
         IC analysis: compute IC / Rank IC / ICIR / IC statistical significance.
 
+        当 chunk_size 已设置时，按时间分块逐块计算 IC 序列，再汇总聚合。
+        IC 值在各时间截面上独立，分块拼接结果与全量计算数值一致（差异 < 1e-8）。
+        When chunk_size is set, compute IC series per time chunk, then aggregate.
+        IC values are independent per timestamp; merged chunked results match full
+        calculation within 1e-8 tolerance.
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
-        self.ic = calc_ic(self.factor, self.returns)
-        self.rank_ic = calc_rank_ic(self.factor, self.returns)
-        self.icir = calc_icir(self.factor, self.returns)
-        self.ic_stats = calc_ic_stats(self.factor, self.returns)
+        if self.chunk_size is None:
+            # 全量模式：原有逻辑 / full mode: original logic
+            self.ic = calc_ic(self.factor, self.returns)
+            self.rank_ic = calc_rank_ic(self.factor, self.returns)
+            self.icir = calc_icir(self.factor, self.returns)
+            self.ic_stats = calc_ic_stats(self.factor, self.returns)
+        else:
+            # 分块模式 / chunked mode
+            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+
+            # 逐块计算 IC / RankIC / compute IC per chunk
+            ic_chunks = [
+                calc_ic(fc, rc) for fc, rc in zip(factor_chunks, returns_chunks)
+            ]
+            rank_ic_chunks = [
+                calc_rank_ic(fc, rc) for fc, rc in zip(factor_chunks, returns_chunks)
+            ]
+
+            # 汇总 IC 序列（各时间截面独立，直接拼接）/ merge IC series
+            self.ic = merge_chunk_results(ic_chunks, "ic")
+            self.rank_ic = merge_chunk_results(rank_ic_chunks, "ic")
+
+            # ICIR / IC 统计量从合并后的 IC 序列计算
+            # ICIR / IC stats computed from merged IC series
+            self.icir = _icir_from_series(self.ic)
+            self.ic_stats = _ic_stats_from_series(self.ic)
+
         return self
 
     def run_grouping(self) -> "FactorEvaluator":
@@ -389,3 +423,71 @@ class FactorEvaluator:
                 rows["neutralized_return"] = self.neutralized_curve.iloc[-1] - 1.0
 
         return pd.DataFrame([rows])
+
+
+# ============================================================
+# 模块级辅助函数 / Module-level helpers
+# ============================================================
+
+
+def _icir_from_series(ic_series: pd.Series) -> float:
+    """
+    从 IC 序列计算 ICIR / Compute ICIR from IC series.
+
+    ICIR = mean(IC) / std(IC)，与 calc_icir 的数值逻辑一致（ddof=1）。
+    ICIR = mean(IC) / std(IC), numerically consistent with calc_icir (ddof=1).
+    """
+    ic_valid = ic_series.dropna()
+    if len(ic_valid) == 0:
+        return 0.0
+    mean_ic = ic_valid.mean()
+    std_ic = ic_valid.std()
+    if std_ic == 0:
+        return 0.0
+    return mean_ic / std_ic
+
+
+def _ic_stats_from_series(ic_series: pd.Series) -> pd.Series:
+    """
+    从 IC 序列计算统计显著性指标 / Compute IC stats from IC series.
+
+    与 calc_ic_stats 输出字段完全一致，但直接接受 IC 序列而非 factor/returns，
+    适用于分块合并后的 IC 序列场景。
+    Output fields are fully consistent with calc_ic_stats, but accepts an IC series
+    directly instead of factor/returns, suitable for merged chunked IC series.
+    """
+    ic_valid = ic_series.dropna()
+
+    if len(ic_valid) < 3:
+        warnings.warn(
+            f"IC series has only {len(ic_valid)} valid observations (need >= 3), "
+            "returning NaN stats",
+            UserWarning,
+        )
+        return pd.Series({
+            "IC_mean": np.nan,
+            "IC_std": np.nan,
+            "ICIR": np.nan,
+            "t_stat": np.nan,
+            "p_value": np.nan,
+            "IC_skew": np.nan,
+            "IC_kurtosis": np.nan,
+        })
+
+    ic_mean = float(ic_valid.mean())
+    ic_std = float(ic_valid.std(ddof=1))
+    icir = ic_mean / ic_std if ic_std != 0 else np.nan
+
+    t_stat, p_value = stats.ttest_1samp(ic_valid.values, 0.0)
+    ic_skew = float(stats.skew(ic_valid.values, bias=False))
+    ic_kurtosis = float(stats.kurtosis(ic_valid.values, bias=False))
+
+    return pd.Series({
+        "IC_mean": ic_mean,
+        "IC_std": ic_std,
+        "ICIR": icir,
+        "t_stat": float(t_stat),
+        "p_value": float(p_value),
+        "IC_skew": ic_skew,
+        "IC_kurtosis": ic_kurtosis,
+    })
