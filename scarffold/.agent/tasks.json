@@ -20,7 +20,7 @@
   {
     "id": 4,
     "task": "run_grouping() 分块计算：按时间 chunk 逐块执行 quantile_group，确保分块内截面完整性",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {

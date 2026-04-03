@@ -210,10 +210,29 @@ class FactorEvaluator:
         """
         计算分位数分组标签 / Compute quantile group labels.
 
+        当 chunk_size 已设置时，按时间分块逐块执行 quantile_group，
+        确保分块内截面完整性。各时间截面的分组标签相互独立，
+        分块拼接结果与全量计算数值一致。
+        When chunk_size is set, execute quantile_group per time chunk,
+        ensuring cross-sectional completeness within each chunk. Group labels
+        are independent per timestamp; merged results match full calculation.
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
-        self.group_labels = quantile_group(self.factor, n_groups=self.n_groups)
+        if self.chunk_size is None:
+            # 全量模式：原有逻辑 / full mode: original logic
+            self.group_labels = quantile_group(self.factor, n_groups=self.n_groups)
+        else:
+            # 分块模式：逐块计算分组标签 / chunked mode: per-chunk grouping
+            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            chunk_labels = [
+                quantile_group(fc, n_groups=self.n_groups)
+                for fc in factor_chunks
+            ]
+            # 分组标签按时间截面独立，直接拼接 / labels independent per timestamp, concat
+            self.group_labels = merge_chunk_results(chunk_labels, "ic")
+
         return self
 
     def run_curves(self) -> "FactorEvaluator":

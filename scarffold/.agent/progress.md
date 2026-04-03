@@ -3,6 +3,14 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 4] feat: run_grouping() 分块计算 (37 tests passed)
+- `run_grouping()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块执行 `quantile_group`
+- 分组标签在各时间截面上独立（截面内分位数计算），分块拼接结果与全量计算完全一致（diff = 0）
+- 使用 `split_into_chunks` 分块 + `merge_chunk_results(..., "ic")` 汇总拼接
+- 截面完整性：每个分块内所有 symbol 在每个时间戳均存在，分组标签范围正确
+- 覆盖 5 种 chunk_size、多种子、含 NaN、小数据集、chunk_size=1、不同 n_groups、向后兼容等场景
+- 用法：`ev = FactorEvaluator(factor, returns, chunk_size=30); ev.run_grouping()` → `ev.group_labels` 与全量一致
+
 [2026-04-04 Task 3] feat: run_metrics() IC/IR 分块计算 (61 tests passed)
 - `run_metrics()` 新增分块模式：当 `chunk_size` 已设置时，按时间戳分块逐块计算 IC/RankIC 序列
 - 使用 `split_into_chunks` 分块 + `merge_chunk_results(..., "ic")` 汇总拼接
