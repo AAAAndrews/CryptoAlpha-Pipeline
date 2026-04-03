@@ -3,6 +3,18 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 28] feat: HTML 报告端到端集成测试 (31 checks passed)
+- 新增 `tests/test_html_report_e2e.py`，7 个测试类 31 项检测全面覆盖 HTML 报告端到端集成
+- report.html 端到端生成验证 (5 tests)：pipeline 执行后文件存在、完整 HTML 结构（DOCTYPE/head/body）、包含所有 5 个章节（绩效概览 + 4 图表）、标题含因子名、生成时间戳
+- base64 图片内嵌无外部依赖 (6 tests)：4 张图表 base64 内嵌、可解码为有效 PNG（魔数 `\x89PNG`）、无 http/https 外部图片引用、无非 base64 图片引用、无外部 CSS/JS link 标签、report.html 为自包含单文件（目录中仅有此文件）
+- 信号灯标识正确性 (7 tests)：4 种 CSS 类（good/bad/neutral/na）均存在、颜色定义正确（#27ae60 绿 / #e74c3c 红 / #f39c12 黄 / #999 灰）、ICIR 阈值逻辑（>0.5 good / <0 bad / 其余 neutral / None→na）、报告中含信号灯 span 标签
+- --viz-output 路径自动创建 (3 tests)：不存在的目录自动创建、深层嵌套目录（4 层）自动创建、已有目录不被清空
+- pipeline 数值输出不受可视化影响 (5 tests)：ICIR/Sharpe/对冲净值/换手率 DataFrame/Report DataFrame 在启用和禁用可视化时完全一致
+- 多因子 E2E (1 test)：所有已注册因子（AlphaMomentum/AlphaPriceRange/AlphaVolatility）均能成功生成 report.html 且内容含因子名
+- 边界情况 (4 tests)：最小数据（30×3）、大数据（200×30）、可视化异常不损坏 evaluator（所有属性完整）、不同种子生成不同报告（base64 图片数据不同）
+- 关键设计：使用 monkeypatch mock KlineLoader 避免 real data 依赖，pipeline 完整执行从数据加载到报告生成
+- 用法：`python -m pytest tests/test_html_report_e2e.py -v` → 31 checks 全部 PASS
+
 [2026-04-04 Task 27] feat: 可视化图表生成验证测试 (42 checks passed)
 - 新增 `tests/test_viz_chart_validation.py`，7 个测试类 42 项检测全面覆盖 4 种图表的生成验证
 - 图表正确生成 (6 tests)：IC 时间序列 / 分组收益 / 净值曲线 / 换手率均返回 plt.Figure，同一 evaluator 可依次生成全部图表，子图数量正确

@@ -166,7 +166,7 @@
   {
     "id": 28,
     "task": "HTML 报告端到端集成测试：验证 report.html 生成、图片 base64 内嵌无外部依赖、信号灯标识正确、--viz-output 路径自动创建、不影响现有 pipeline 数值输出",
-    "passes": false,
+    "passes": true,
     "deps": [25, 26]
   }
 ]
