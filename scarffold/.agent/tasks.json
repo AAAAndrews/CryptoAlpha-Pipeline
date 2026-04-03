@@ -68,7 +68,7 @@
   {
     "id": 12,
     "task": "分块处理集成测试：验证 chunk_size=None 时行为与改造前完全一致（向后兼容）、run_all() 分块模式完整流程、所有子方法分块模式独立可用",
-    "passes": false,
+    "passes": true,
     "deps": [3, 4, 5, 6, 7]
   },
 

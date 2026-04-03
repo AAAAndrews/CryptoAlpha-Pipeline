@@ -3,6 +3,12 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 12] feat: 分块处理集成测试 (153 checks passed)
+- 新增 `tests/test_chunked_integration.py`，验证分块处理模式的完整集成行为
+- 8 个场景：chunk_size=None 向后兼容（36 项属性/类型/起始值检查）、run_all() 分块模式完整流程（IC/净值/绩效比率全字段对比）、5 个子方法分块独立可用（metrics/grouping/curves/turnover/neutralize）、generate_report() 分块/全量模式对比（含选择性板块报告 + 无效板块异常）、run() 向后兼容别名（全量+分块+run vs run_all 一致性）、4 种子 × 3 chunk_size 多种子稳定性、含 NaN 数据集成、链式调用混合模式
+- 关键结论：分块模式 run_all() 完整流程与全量完全一致（IC diff=0, hedge diff<1e-13），换手率/排名自相关在分块边界处为 NaN（设计行为），generate_report() 除换手率聚合指标外差异 < 1e-14
+- 用法：`python tests/test_chunked_integration.py` → 153 checks 全部 PASS
+
 [2026-04-04 Task 11] feat: 分块内存占用对比验证测试 (30 checks passed)
 - 新增 `tests/test_chunked_memory.py`，验证分块模式峰值内存显著低于全量模式
 - 7 个场景：chunk_size=100 峰值内存 < 全量 40%（500×200 数据：32.47%）、多种 chunk_size 内存递减趋势（50/100/250 vs full）、ChunkMemoryTracker 属性记录正确（peak_mb/rss_mb）、内存日志格式验证（peak_alloc/RSS/chunk index）、多块追踪一致性（4 块独立追踪）、run_all() 分块模式下 5 个子方法全部产生内存日志（20 条）、不同数据规模下 chunk_size=100 内存比均 < 40%（500 日期 32.83%，800 日期 25.60%）
