@@ -2,7 +2,7 @@
   {
     "id": 1,
     "task": "创建 FactorAnalysis/chunking.py 分块工具函数：实现 split_into_chunks(data, chunk_size) 按时间戳分块（边界对齐 rebalance 频率）和 merge_chunk_results(chunk_results, metric_type) 按 IC/净值曲线/换手率等类型分别汇总聚合",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
