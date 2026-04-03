@@ -93,7 +93,7 @@
   {
     "id": 16,
     "task": "未来函数检测验证测试：验证现有因子输出 PASS、人为注入泄露用例输出 FAIL、边界情况（空数据/全 NaN/单交易对）",
-    "passes": false,
+    "passes": true,
     "deps": [15]
   },
   {

@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 Task 16] feat: 未来函数检测验证测试 (43 checks passed)
+- 新增 `tests/test_future_leak_detection.py`，8 个测试类 43 项检测全面覆盖未来函数检测脚本
+- 静态扫描验证 (3 tests)：FactorLib 无 shift(-N)、shift(-N) 仅在允许文件中、KlineLoader 无 shift
+- 现有因子 PASS 验证 (6 tests)：3 因子 × 2 检测（独立性 + 对齐），全部 PASS
+- 泄露因子 FAIL 验证 (3 tests)：_LeakyZScoreFactor（全样本 z-score）和 _LeakyFutureMeanFactor（未来均值）均被正确检出 FAIL
+- 边界情况 (6 tests)：空数据 graceful 处理、单交易对正常工作、全 NaN 因子对齐后为空、2 日期最小数据量、5 日期对齐检测
+- DetectionReport 结构验证 (4 tests)：all_passed/n_pass/n_fail 属性、空报告、CheckResult 默认值
+- FutureLeakDetector 集成 (7 tests)：Markdown 报告生成（全 PASS/含 FAIL/表格格式）、mock 数据完整流程、泄露因子检出、空数据处理、全 NaN 数据、单交易对
+- 多种子稳定性 (8 tests)：5 种子 × 现有因子 PASS + 3 种子 × 泄露因子 FAIL
+- CheckResult 完整性 (3 tests)：静态结果 name/status、动态结果 details、对齐检测项名称
+- 关键设计：泄露因子使用全样本统计量（z-score）和未来均值，截断数据后重叠部分因子值差异 > 1e-12
+- 用法：`python -m pytest tests/test_future_leak_detection.py -v` → 43 checks 全部 PASS
+
+
 [2026-04-04 Task 15] feat: 未来函数自动化检测脚本 check_future_leak.py (15 checks passed)
 - 新增 `scripts/check_future_leak.py`，包含静态代码扫描 + 动态数据验证两层检测机制
 - 静态扫描（Phase 1）：AST + 正则双重扫描，3 项检测——FactorLib 无 shift(-N)、shift(-N) 仅在 returns.py/datapreprocess.py、KlineLoader 无 shift
