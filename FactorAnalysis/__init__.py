@@ -7,7 +7,7 @@ Decoupled from DEAP, uses pandas DataFrame as primary data format, compatible wi
 
 from .metrics import calc_ic, calc_rank_ic, calc_icir, calc_sharpe, calc_calmar, calc_sortino, calc_ic_stats
 from .grouping import quantile_group
-from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
+from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve, calc_portfolio_curves
 from .cost import deduct_cost
 from .returns import calc_returns
 from .alignment import align_factor_returns
@@ -32,6 +32,7 @@ __all__ = [
     "calc_long_only_curve",
     "calc_short_only_curve",
     "calc_top_bottom_curve",
+    "calc_portfolio_curves",
     # 交易成本 / Transaction costs
     "deduct_cost",
     # 收益矩阵 / Return matrix

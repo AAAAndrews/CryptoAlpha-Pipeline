@@ -186,6 +186,101 @@ def calc_short_only_curve(
     return equity
 
 
+def calc_portfolio_curves(
+    factor: pd.Series,
+    returns: pd.Series,
+    n_groups: int = 5,
+    top_k: int = 1,
+    bottom_k: int = 1,
+    rebalance_freq: int = 1,
+    _raw: bool = False,
+    group_labels: pd.Series | None = None,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """
+    统一计算多/空/对冲三条净值曲线 / Unified long/short/hedge equity curve calculation.
+
+    单次 groupby.apply 同时输出三条日收益序列，将三次独立调用合并为一次，
+    消除重复的标签计算和 DataFrame 构建。
+    Single groupby.apply outputs three daily return series simultaneously,
+    merging three independent calls into one, eliminating redundant label
+    computation and DataFrame construction.
+
+    Parameters / 参数:
+        factor: 因子值，MultiIndex (timestamp, symbol) / Factor values
+        returns: 前向收益率，MultiIndex (timestamp, symbol) / Forward returns
+        n_groups: 分组数量，默认 5 / Number of groups, default 5
+        top_k: 做多最高的几组，默认 1 / Number of top groups to long, default 1
+        bottom_k: 做空最低的几组，默认 1 / Number of bottom groups to short, default 1
+        rebalance_freq: 调仓频率（每 N 个截面调仓一次），默认 1
+                      Rebalance every N cross-sections, default 1
+        _raw: 是否返回原始 cumprod（不覆写起始值为 1.0），默认 False
+              Return raw cumprod without overwriting start to 1.0, default False
+        group_labels: 预计算分组标签，传入时跳过内部 quantile_group
+                      Pre-computed group labels; skip quantile_group when provided
+
+    Returns / 返回:
+        tuple[pd.Series, pd.Series, pd.Series]:
+            (long_curve, short_curve, hedge_curve) 三条净值曲线
+            Three equity curves indexed by timestamp, starting value 1.0
+    """
+    # 参数校验 / parameter validation
+    if not isinstance(rebalance_freq, int):
+        raise TypeError(
+            f"rebalance_freq 必须为整数，当前类型: {type(rebalance_freq).__name__}"
+        )
+    if rebalance_freq < 1:
+        raise ValueError(f"rebalance_freq 必须 >= 1，当前值: {rebalance_freq}")
+    if top_k < 1:
+        raise ValueError(f"top_k 必须 >= 1，当前值: {top_k}")
+    if bottom_k < 1:
+        raise ValueError(f"bottom_k 必须 >= 1，当前值: {bottom_k}")
+    if top_k + bottom_k > n_groups:
+        raise ValueError(
+            f"top_k ({top_k}) + bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})"
+        )
+
+    # 一次性计算分组标签 / compute group labels once
+    labels = _calc_labels_with_rebalance(
+        factor, n_groups, rebalance_freq, group_labels=group_labels,
+    )
+    df = pd.DataFrame({"label": labels, "returns": returns})
+
+    top_labels = set(range(n_groups - top_k, n_groups))
+    bottom_labels = set(range(bottom_k))
+
+    def _portfolio_returns(g: pd.DataFrame) -> pd.Series:
+        """
+        截面内同时计算多/空/对冲收益 / Compute long/short/hedge returns in one cross-section.
+        """
+        valid = g["returns"].notna() & np.isfinite(g["returns"])
+        long_mask = valid & g["label"].isin(top_labels)
+        short_mask = valid & g["label"].isin(bottom_labels)
+        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
+        # 做空 = 收益取反 / short = negate returns
+        short_ret = (
+            -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
+        )
+        return pd.Series({
+            "long": long_ret,
+            "short": short_ret,
+            "hedge": long_ret + short_ret,
+        })
+
+    daily = df.groupby(level=0).apply(_portfolio_returns)
+
+    # 累积净值 / cumulative equity
+    long_curve = (1.0 + daily["long"]).cumprod()
+    short_curve = (1.0 + daily["short"]).cumprod()
+    hedge_curve = (1.0 + daily["hedge"]).cumprod()
+
+    if not _raw:
+        long_curve.iloc[0] = 1.0
+        short_curve.iloc[0] = 1.0
+        hedge_curve.iloc[0] = 1.0
+
+    return long_curve, short_curve, hedge_curve
+
+
 def calc_top_bottom_curve(
     factor: pd.Series,
     returns: pd.Series,

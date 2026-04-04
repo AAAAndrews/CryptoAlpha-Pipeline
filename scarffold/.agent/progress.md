@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 20:00] Task 6 完成 — 创建统一 calc_portfolio_curves 函数
+- 修改文件: FactorAnalysis/portfolio.py, FactorAnalysis/__init__.py
+- 新增函数: `calc_portfolio_curves(factor, returns, n_groups, top_k, bottom_k, rebalance_freq, _raw, group_labels)` → tuple[long, short, hedge]
+- 核心实现: 单次 groupby.apply 的 `_portfolio_returns` 内部函数同时计算 long/short/hedge 三种日收益，一次构建 DataFrame 和标签，消除三次独立调用的冗余
+- 支持全部参数: rebalance_freq 调仓频率、_raw 原始模式、group_labels 预计算标签缓存复用
+- 完整参数校验: rebalance_freq 类型/范围、top_k/bottom_k 范围、top_k+bottom_k ≤ n_groups
+- __init__.py 新增 `calc_portfolio_curves` 导出
+- 验证测试: tests/test_perf_calc_portfolio_curves.py (11 checks passed)
+  - 6 场景默认参数 × 3 曲线 diff < 1e-10 (18 checks)
+  - rebalance_freq > 1 一致性 (9 checks)
+  - 预计算 group_labels 一致性 (18 checks)
+  - _raw=True 模式一致性 (3 checks)
+  - 自定义 top_k/bottom_k 一致性 (9 checks)
+  - _raw 起始值行为 (1 check)
+  - 参数校验 (5 checks: TypeError/ValueError)
+- 回归测试: 76 项既有测试全部通过，无回归
+- 用法: `from FactorAnalysis.portfolio import calc_portfolio_curves; long, short, hedge = calc_portfolio_curves(factor, returns)` — 后续 Task 7 将重构三独立函数为薄包装
+
 [2026-04-04 19:00] Task 5 完成 — quantile_group 缓存数值一致性 + 分块兼容
 - 新增文件: tests/test_perf_quantile_cache.py
 - 验证内容:

@@ -32,7 +32,7 @@
   {
     "id": 6,
     "task": "创建统一 calc_portfolio_curves 函数 (portfolio.py)：单次 groupby.apply 同时输出 long/short/hedge 三条日收益序列，支持 rebalance_freq、_raw 参数，内部使用预计算 group_labels",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {
