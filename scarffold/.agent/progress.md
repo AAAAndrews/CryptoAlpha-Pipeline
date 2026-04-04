@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 00:30] Task 11 完成 — IC/RankIC 向量化整体数值一致性统一测试
+- 新增文件: tests/test_perf_ic_rankic_unified.py
+- 验证内容:
+  1. 6 种 mock 场景 × IC/RankIC/ICIR/IC_stats 全字段 diff < 1e-10 (24 checks: 6 场景 × 4 指标)
+  2. 极端信号 IC=1.0: IC/RankIC Series 一致性 + ICIR 方向验证 + IC_stats 4 稳定字段 (4 checks)
+  3. 极端信号 IC=-1.0: IC/RankIC Series 一致性 + ICIR 方向验证 (3 checks)
+  4. NaN 数据处理: 高比例 NaN × IC/RankIC/ICIR/IC_stats + 全 NaN 输入 IC/RankIC/ICIR (7 checks)
+  5. 多种子稳定性: 5 个种子 × IC/RankIC/ICIR/IC_stats 全字段 (20 checks)
+  6. IC_stats 数据不足: 全 NaN 返回 + 警告触发 (2 checks)
+- 总计 60 checks passed
+- 技术细节: 极端信号 (IC=±1.0) 时 IC_std≈0 导致 ICIR/t_stat/p_value 数值爆炸，此类场景仅验证稳定字段 (IC_mean/IC_std/IC_skew/IC_kurtosis)；其余场景全字段 1e-10 容差
+- 参考实现: 逐截面 groupby.apply 的 calc_ic_reference (Pearson) 和 calc_rank_ic_reference (Spearman)
+- 回归: test_metrics_ic (8 checks) 全部通过，无回归
+- 用法: 此测试综合验证 Task 9 (calc_ic 向量化) + Task 10 (calc_rank_ic 向量化) 的整体正确性，是后续 E2E 基准测试 (Task 18) 的前置依赖
+
 [2026-04-04 23:30] Task 10 完成 — 向量化 calc_rank_ic (metrics.py)
 - 修改文件: FactorAnalysis/metrics.py
 - 核心变更: calc_rank_ic 从 groupby.apply 逐截面 _spearman 内部函数改为 unstack 2D 矩阵 + pandas 行级排名 + numpy 向量化 Pearson 批量计算

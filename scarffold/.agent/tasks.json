@@ -62,7 +62,7 @@
   {
     "id": 11,
     "task": "测试：IC/RankIC 向量化数值一致性 (tests/test_perf_ic_vectorized.py) — 6 种 mock 场景 × IC/RankIC/ICIR/IC_stats 全字段 diff < 1e-10、极端信号 (IC=1.0/-1.0)、含 NaN 数据、多种子稳定性",
-    "passes": false,
+    "passes": true,
     "deps": [9, 10]
   },
   {
