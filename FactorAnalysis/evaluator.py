@@ -27,7 +27,7 @@ from .metrics import (
     calc_ic_stats,
 )
 from .grouping import quantile_group
-from .portfolio import calc_long_only_curve, calc_short_only_curve, calc_top_bottom_curve
+from .portfolio import calc_portfolio_curves
 from .cost import deduct_cost
 from .turnover import calc_turnover, calc_rank_autocorr
 from .neutralize import calc_neutralized_curve
@@ -291,18 +291,8 @@ class FactorEvaluator:
         cached_labels = self._cached_group_labels
 
         if self.chunk_size is None:
-            # 全量模式：原有逻辑 + 缓存复用 / full mode: original logic + cache reuse
-            self.long_curve = calc_long_only_curve(
-                self.factor, self.returns,
-                n_groups=self.n_groups, top_k=self.top_k,
-                group_labels=cached_labels,
-            )
-            self.short_curve = calc_short_only_curve(
-                self.factor, self.returns,
-                n_groups=self.n_groups, bottom_k=self.bottom_k,
-                group_labels=cached_labels,
-            )
-            self.hedge_curve = calc_top_bottom_curve(
+            # 全量模式：单次调用 calc_portfolio_curves / full mode: single calc_portfolio_curves call
+            self.long_curve, self.short_curve, self.hedge_curve = calc_portfolio_curves(
                 self.factor, self.returns,
                 n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
                 group_labels=cached_labels,
@@ -324,19 +314,14 @@ class FactorEvaluator:
             hedge_chunks = []
             for i, (fc, rc, lc) in enumerate(zip(factor_chunks, returns_chunks, label_chunks)):
                 with ChunkMemoryTracker(i, n_chunks, description="run_curves"):
-                    long_chunks.append(
-                        calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k,
-                                             _raw=True, group_labels=lc)
+                    lc_long, lc_short, lc_hedge = calc_portfolio_curves(
+                        fc, rc,
+                        n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
+                        _raw=True, group_labels=lc,
                     )
-                    short_chunks.append(
-                        calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k,
-                                              _raw=True, group_labels=lc)
-                    )
-                    hedge_chunks.append(
-                        calc_top_bottom_curve(fc, rc, n_groups=self.n_groups,
-                                             top_k=self.top_k, bottom_k=self.bottom_k,
-                                             _raw=True, group_labels=lc)
-                    )
+                    long_chunks.append(lc_long)
+                    short_chunks.append(lc_short)
+                    hedge_chunks.append(lc_hedge)
 
             # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
             self.long_curve = _merge_raw_curves(long_chunks)

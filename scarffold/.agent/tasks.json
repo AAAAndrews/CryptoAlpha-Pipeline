@@ -38,7 +38,7 @@
   {
     "id": 7,
     "task": "重构 calc_long_only/short_only/top_bottom_curve 为薄包装：保留原公共 API 签名，内部委托给 calc_portfolio_curves；FactorEvaluator.run_curves() 改为调用 calc_portfolio_curves + 设置缓存",
-    "passes": false,
+    "passes": true,
     "deps": [6]
   },
   {

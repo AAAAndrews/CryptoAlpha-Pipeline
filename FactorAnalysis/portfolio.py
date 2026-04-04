@@ -81,9 +81,8 @@ def calc_long_only_curve(
     """
     计算仅多组（按因子值最高的 top_k 组）等权净值曲线 / Calculate long-only equity curve.
 
-    每个截面选取因子值最高的 top_k 组，等权持有，计算累积净值。
-    At each cross-section, hold the top_k groups with highest factor values equally,
-    compute cumulative equity curve.
+    薄包装：内部委托给 _portfolio_curves_core，仅返回 long 曲线。
+    Thin wrapper: delegates to _portfolio_curves_core, returns only the long curve.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
@@ -106,25 +105,13 @@ def calc_long_only_curve(
     if top_k > n_groups:
         raise ValueError(f"top_k ({top_k}) 不能超过 n_groups ({n_groups})")
 
-    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq, group_labels=group_labels)
-    df = pd.DataFrame({"label": labels, "returns": returns})
-
-    # 最高组标签 / highest group label
-    top_labels = set(range(n_groups - top_k, n_groups))
-
-    def _long_return(g: pd.DataFrame) -> float:
-        """截面内 top_k 组等权平均收益 / Equal-weighted avg return of top_k groups in one cross-section."""
-        mask = g["label"].isin(top_labels) & g["returns"].notna() & np.isfinite(g["returns"])
-        if mask.sum() == 0:
-            return 0.0
-        return g.loc[mask, "returns"].mean()
-
-    daily_returns = df.groupby(level=0).apply(_long_return)
-    # 累积净值 / cumulative equity
-    equity = (1.0 + daily_returns).cumprod()
-    if not _raw:
-        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
-    return equity
+    # bottom_k=0: 不计算空头侧，short/hedge 曲线为平坦净值
+    # bottom_k=0: no short side, short/hedge curves are flat equity
+    long_curve, _, _ = _portfolio_curves_core(
+        factor, returns, n_groups, top_k, bottom_k=0,
+        rebalance_freq=rebalance_freq, _raw=_raw, group_labels=group_labels,
+    )
+    return long_curve
 
 
 def calc_short_only_curve(
@@ -139,9 +126,8 @@ def calc_short_only_curve(
     """
     计算仅空组（按因子值最低的 bottom_k 组）等权做空净值曲线 / Calculate short-only equity curve.
 
-    每个截面选取因子值最低的 bottom_k 组，等权做空（收益取反），计算累积净值。
-    At each cross-section, short the bottom_k groups with lowest factor values equally
-    (negate returns), compute cumulative equity curve.
+    薄包装：内部委托给 _portfolio_curves_core，仅返回 short 曲线。
+    Thin wrapper: delegates to _portfolio_curves_core, returns only the short curve.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
@@ -164,26 +150,72 @@ def calc_short_only_curve(
     if bottom_k > n_groups:
         raise ValueError(f"bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})")
 
-    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq, group_labels=group_labels)
+    # top_k=0: 不计算多头侧，long/hedge 曲线为平坦净值
+    # top_k=0: no long side, long/hedge curves are flat equity
+    _, short_curve, _ = _portfolio_curves_core(
+        factor, returns, n_groups, top_k=0, bottom_k=bottom_k,
+        rebalance_freq=rebalance_freq, _raw=_raw, group_labels=group_labels,
+    )
+    return short_curve
+
+
+def _portfolio_curves_core(
+    factor: pd.Series,
+    returns: pd.Series,
+    n_groups: int,
+    top_k: int,
+    bottom_k: int,
+    rebalance_freq: int,
+    _raw: bool,
+    group_labels: pd.Series | None = None,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """
+    核心计算：单次 groupby.apply 同时输出 long/short/hedge 三条净值曲线（无参数校验）。
+    Core: single groupby.apply outputs long/short/hedge equity curves (no validation).
+
+    供 calc_portfolio_curves 和薄包装函数内部使用。
+    Used internally by calc_portfolio_curves and thin-wrapper functions.
+    """
+    # 一次性计算分组标签 / compute group labels once
+    labels = _calc_labels_with_rebalance(
+        factor, n_groups, rebalance_freq, group_labels=group_labels,
+    )
     df = pd.DataFrame({"label": labels, "returns": returns})
 
-    # 最低组标签 / lowest group labels
+    top_labels = set(range(n_groups - top_k, n_groups))
     bottom_labels = set(range(bottom_k))
 
-    def _short_return(g: pd.DataFrame) -> float:
-        """截面内 bottom_k 组等权做空收益 / Equal-weighted short return of bottom_k groups in one cross-section."""
-        mask = g["label"].isin(bottom_labels) & g["returns"].notna() & np.isfinite(g["returns"])
-        if mask.sum() == 0:
-            return 0.0
+    def _portfolio_returns(g: pd.DataFrame) -> pd.Series:
+        """
+        截面内同时计算多/空/对冲收益 / Compute long/short/hedge returns in one cross-section.
+        """
+        valid = g["returns"].notna() & np.isfinite(g["returns"])
+        long_mask = valid & g["label"].isin(top_labels)
+        short_mask = valid & g["label"].isin(bottom_labels)
+        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
         # 做空 = 收益取反 / short = negate returns
-        return -g.loc[mask, "returns"].mean()
+        short_ret = (
+            -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
+        )
+        return pd.Series({
+            "long": long_ret,
+            "short": short_ret,
+            "hedge": long_ret + short_ret,
+        })
 
-    daily_returns = df.groupby(level=0).apply(_short_return)
+    daily = df.groupby(level=0).apply(_portfolio_returns)
+
     # 累积净值 / cumulative equity
-    equity = (1.0 + daily_returns).cumprod()
+    long_curve = (1.0 + daily["long"]).cumprod()
+    short_curve = (1.0 + daily["short"]).cumprod()
+    hedge_curve = (1.0 + daily["hedge"]).cumprod()
+
     if not _raw:
-        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
-    return equity
+        long_curve.iloc[0] = 1.0
+        short_curve.iloc[0] = 1.0
+        hedge_curve.iloc[0] = 1.0
+
+    return long_curve, short_curve, hedge_curve
 
 
 def calc_portfolio_curves(
@@ -239,46 +271,9 @@ def calc_portfolio_curves(
             f"top_k ({top_k}) + bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})"
         )
 
-    # 一次性计算分组标签 / compute group labels once
-    labels = _calc_labels_with_rebalance(
-        factor, n_groups, rebalance_freq, group_labels=group_labels,
+    return _portfolio_curves_core(
+        factor, returns, n_groups, top_k, bottom_k, rebalance_freq, _raw, group_labels,
     )
-    df = pd.DataFrame({"label": labels, "returns": returns})
-
-    top_labels = set(range(n_groups - top_k, n_groups))
-    bottom_labels = set(range(bottom_k))
-
-    def _portfolio_returns(g: pd.DataFrame) -> pd.Series:
-        """
-        截面内同时计算多/空/对冲收益 / Compute long/short/hedge returns in one cross-section.
-        """
-        valid = g["returns"].notna() & np.isfinite(g["returns"])
-        long_mask = valid & g["label"].isin(top_labels)
-        short_mask = valid & g["label"].isin(bottom_labels)
-        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
-        # 做空 = 收益取反 / short = negate returns
-        short_ret = (
-            -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
-        )
-        return pd.Series({
-            "long": long_ret,
-            "short": short_ret,
-            "hedge": long_ret + short_ret,
-        })
-
-    daily = df.groupby(level=0).apply(_portfolio_returns)
-
-    # 累积净值 / cumulative equity
-    long_curve = (1.0 + daily["long"]).cumprod()
-    short_curve = (1.0 + daily["short"]).cumprod()
-    hedge_curve = (1.0 + daily["hedge"]).cumprod()
-
-    if not _raw:
-        long_curve.iloc[0] = 1.0
-        short_curve.iloc[0] = 1.0
-        hedge_curve.iloc[0] = 1.0
-
-    return long_curve, short_curve, hedge_curve
 
 
 def calc_top_bottom_curve(
@@ -294,10 +289,8 @@ def calc_top_bottom_curve(
     """
     计算多空对冲组合净值曲线：做多 top_k 组 - 做空 bottom_k 组 / Calculate long-short hedged equity curve.
 
-    每个截面选取因子值最高的 top_k 组做多、最低的 bottom_k 组做空，
-    日收益 = 多头收益 - 空头收益（空头收益取反后相加）。
-    At each cross-section, go long on top_k highest groups and short on bottom_k lowest groups.
-    Daily return = long return - short return (short returns are negated before adding).
+    薄包装：内部委托给 _portfolio_curves_core，仅返回 hedge 曲线。
+    Thin wrapper: delegates to _portfolio_curves_core, returns only the hedge curve.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
@@ -325,24 +318,8 @@ def calc_top_bottom_curve(
             f"top_k ({top_k}) + bottom_k ({bottom_k}) 不能超过 n_groups ({n_groups})"
         )
 
-    labels = _calc_labels_with_rebalance(factor, n_groups, rebalance_freq, group_labels=group_labels)
-    df = pd.DataFrame({"label": labels, "returns": returns})
-
-    top_labels = set(range(n_groups - top_k, n_groups))
-    bottom_labels = set(range(bottom_k))
-
-    def _hedge_return(g: pd.DataFrame) -> float:
-        """截面内多空对冲收益 / Long-short hedged return in one cross-section."""
-        valid = g["returns"].notna() & np.isfinite(g["returns"])
-        long_mask = valid & g["label"].isin(top_labels)
-        short_mask = valid & g["label"].isin(bottom_labels)
-        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
-        short_ret = -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
-        return long_ret + short_ret
-
-    daily_returns = df.groupby(level=0).apply(_hedge_return)
-    # 累积净值 / cumulative equity
-    equity = (1.0 + daily_returns).cumprod()
-    if not _raw:
-        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / ensure start value is 1.0
-    return equity
+    _, _, hedge_curve = _portfolio_curves_core(
+        factor, returns, n_groups, top_k, bottom_k,
+        rebalance_freq=rebalance_freq, _raw=_raw, group_labels=group_labels,
+    )
+    return hedge_curve

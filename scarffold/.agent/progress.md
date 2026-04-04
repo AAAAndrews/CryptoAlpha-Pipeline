@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 21:00] Task 7 完成 — 重构三独立函数为薄包装 + evaluator 单次调用
+- 修改文件: FactorAnalysis/portfolio.py, FactorAnalysis/evaluator.py
+- 核心重构: 提取 `_portfolio_curves_core()` 内部函数（无参数校验），承载全部计算逻辑
+- `calc_long_only_curve` → 薄包装: 校验参数后调用 `_portfolio_curves_core(top_k=X, bottom_k=0)`，仅返回 long 曲线
+- `calc_short_only_curve` → 薄包装: 校验参数后调用 `_portfolio_curves_core(top_k=0, bottom_k=X)`，仅返回 short 曲线
+- `calc_top_bottom_curve` → 薄包装: 校验参数后调用 `_portfolio_curves_core(top_k=X, bottom_k=Y)`，仅返回 hedge 曲线
+- `calc_portfolio_curves` → 校验层 + 委托 `_portfolio_curves_core`（行为不变，Task 6 测试全部通过）
+- evaluator.py: `run_curves()` 全量模式改为单次 `calc_portfolio_curves()` 调用替代三次独立调用；分块模式同理
+- evaluator.py import: 移除三独立函数导入，改为 `from .portfolio import calc_portfolio_curves`
+- 公共 API 完全保留: 三函数签名、返回类型、参数校验行为均不变
+- 验证: 34 项关键测试全部通过（含 Task 6 的 11 项 calc_portfolio_curves 测试 + 缓存/分块集成测试）
+- 回归: 0 项回归，所有既有测试保持通过
+- 用法: 下游代码无需任何修改，三函数仍可独立调用；evaluator.run_curves() 内部自动走统一路径
+
 [2026-04-04 20:00] Task 6 完成 — 创建统一 calc_portfolio_curves 函数
 - 修改文件: FactorAnalysis/portfolio.py, FactorAnalysis/__init__.py
 - 新增函数: `calc_portfolio_curves(factor, returns, n_groups, top_k, bottom_k, rebalance_freq, _raw, group_labels)` → tuple[long, short, hedge]
