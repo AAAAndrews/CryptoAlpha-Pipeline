@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from .grouping import quantile_group
+from .portfolio import calc_portfolio_curves
 
 
 def calc_neutralized_curve(
@@ -127,23 +128,11 @@ def calc_neutralized_curve(
     labels = quantile_group(neutralized_factor, n_groups=n_groups)
     df["label"] = labels
 
-    # 多空对冲：最高组做多、最低组做空 / Long-short: long top group, short bottom group
-    top_labels = set(range(n_groups - 1, n_groups))
-    bottom_labels = set(range(0, 1))
-
-    def _hedge_return(g: pd.DataFrame) -> float:
-        """截面内多空对冲收益 / Long-short hedged return in one cross-section."""
-        valid = g["returns"].notna() & np.isfinite(g["returns"])
-        long_mask = valid & g["label"].isin(top_labels)
-        short_mask = valid & g["label"].isin(bottom_labels)
-        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
-        short_ret = -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
-        return long_ret + short_ret
-
-    daily_returns = df.groupby(level=0).apply(_hedge_return)
-
-    # 累积净值 / Cumulative equity
-    equity = (1.0 + daily_returns).cumprod()
-    if not _raw:
-        equity.iloc[0] = 1.0  # 确保起始值为 1.0 / Ensure start value is 1.0
-    return equity
+    # 复用 calc_portfolio_curves 获取对冲净值曲线，消除重复 groupby.apply
+    # Reuse calc_portfolio_curves for hedge equity curve, eliminating redundant groupby.apply
+    _, _, hedge_curve = calc_portfolio_curves(
+        df["factor"], df["returns"],
+        n_groups=n_groups, top_k=1, bottom_k=1,
+        rebalance_freq=1, _raw=_raw, group_labels=df["label"],
+    )
+    return hedge_curve

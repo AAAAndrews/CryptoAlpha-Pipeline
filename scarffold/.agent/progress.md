@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 02:00] Task 14 完成 — 重构 neutralize 复用 calc_portfolio_curves
+- 修改文件: FactorAnalysis/neutralize.py
+- 核心变更: 删除内部 `_hedge_return` 函数及其 `groupby.apply` 调用，替换为 `calc_portfolio_curves(df["factor"], df["returns"], n_groups, top_k=1, bottom_k=1, rebalance_freq=1, _raw=_raw, group_labels=df["label"])` 获取 hedge 曲线
+- 实现方式: 中性化因子和收益经 demean/group_adjust 处理后，将 df 中修改后的 factor/returns 和已计算的 label 直接传递给 calc_portfolio_curves，消除重复的 groupby.apply
+- 新增依赖: `from .portfolio import calc_portfolio_curves`
+- 公共 API 完全保留: calc_neutralized_curve 签名、参数、返回类型均不变
+- 验证测试: 113 checks passed
+  - 既有回归: test_task16_neutralize (35 checks) + test_task17_neutralize_verify (63 checks) 全部通过
+  - 缓存兼容: test_perf_quantile_cache (6 checks) + test_perf_cache_pass_through (9 checks) 全部通过
+  - 含 run_neutralize 全量/分块模式有/无缓存一致性
+- 回归: 0 项回归，所有既有测试保持通过
+- 用法: 下游 Task 15 将编写测试验证 neutralize 复用后的数值一致性（6 种 mock 场景 × demeaned/group_adjust 组合 × chunk_size 模式）
+
 [2026-04-05 01:30] Task 13 完成 — rank_autocorr 向量化数值一致性测试
 - 测试文件: tests/test_perf_rank_autocorr.py (已有，Task 12 同步创建)
 - 验证内容: 44 checks passed

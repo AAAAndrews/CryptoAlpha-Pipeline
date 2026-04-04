@@ -80,7 +80,7 @@
   {
     "id": 14,
     "task": "重构 neutralize 复用 calc_portfolio_curves：neutralize.py 的 _hedge_return 替换为调用 calc_portfolio_curves 获取 hedge 日收益序列，消除重复的 groupby.apply；保持 calc_neutralized_curve 公共 API 不变",
-    "passes": false,
+    "passes": true,
     "deps": [6]
   },
   {
