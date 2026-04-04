@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 22:00] Task 8 完成 — portfolio 合并数值一致性 + 分块兼容测试
+- 新增文件: tests/test_perf_portfolio_merge.py
+- 验证内容:
+  1. 三薄包装 (calc_long_only/short_only/top_bottom_curve) 与 calc_portfolio_curves 对应元素一致 (6 场景 × 3 曲线 = 18 checks)
+  2. calc_portfolio_curves 直接调用正确性: 起始值 1.0、曲线长度匹配、终值非平凡 (36 checks)
+  3. evaluator.run_curves() 与直接调用 calc_portfolio_curves 一致 (6 场景 × 3 曲线 = 18 checks)
+  4. 不同 top_k/bottom_k 组合: (1,1)/(2,1)/(1,2)/(2,2) × 3 曲线 = 12 checks
+  5. _raw 模式一致性: 6 场景 × 3 曲线 = 18 checks
+  6. rebalance_freq 非默认值: rebal=3,5 × 3 曲线 = 6 checks
+  7. chunk_size 模式两次独立运行一致性 (5 场景 × 3 曲线 = 15 checks)
+  8. chunk_size vs 全量模式: 比较日收益率避免 cumprod 浮点累积 (5 场景 × 3 曲线 + 起始值 = 17 checks)
+  9. evaluator group_labels 缓存传递 run_curves 一致 (6 场景 × 3 曲线 = 18 checks)
+  10. chunk_size + 缓存组合一致性 (5 场景 × 3 曲线 = 15 checks)
+- 总计 10 项测试全部通过
+- 技术细节: chunk vs full 模式比较日收益率 (pct_change) 而非累积净值曲线，因为 cumprod 在长序列上浮点累积误差会被放大到绝对值 > 1e-10（但相对误差在 float64 epsilon 内 ~5.8e-16）
+- 回归: Task 6 的 11 项 calc_portfolio_curves 测试全部通过，无回归
+- 用法: 此测试验证 Task 7 的薄包装重构整体正确性，是后续 E2E 基准测试 (Task 18) 的前置依赖
+
 [2026-04-04 21:00] Task 7 完成 — 重构三独立函数为薄包装 + evaluator 单次调用
 - 修改文件: FactorAnalysis/portfolio.py, FactorAnalysis/evaluator.py
 - 核心重构: 提取 `_portfolio_curves_core()` 内部函数（无参数校验），承载全部计算逻辑
