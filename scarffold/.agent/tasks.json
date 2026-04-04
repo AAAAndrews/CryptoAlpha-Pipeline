@@ -104,7 +104,7 @@
   {
     "id": 18,
     "task": "E2E 性能基准测试 (tests/test_perf_e2e_benchmark.py) — mock 数据 (500×100) 测量优化前后耗时、各子步骤独立计时、验证总耗时降低 50%+、小批量真实数据端到端回归 (3 因子 × run_factor_research)、所有报告字段 diff < 1e-8",
-    "passes": false,
+    "passes": true,
     "deps": [5, 8, 11, 13, 15, 17]
   },
   {

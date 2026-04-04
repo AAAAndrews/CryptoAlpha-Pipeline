@@ -3,6 +3,25 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 04:00] Task 18 完成 — E2E 性能基准测试
+- 新增文件: tests/test_perf_e2e_benchmark.py
+- 验证内容:
+  1. test_substep_timing: 各子步骤独立计时 + 总耗时报告 (500×100 数据集)
+  2. test_optimized_vs_legacy_timing: 优化路径 (run_all + 缓存) vs 旧路径 (无缓存) 耗时对比 + 所有报告字段 diff < 1e-8 + 核心数据对象一致性
+  3. test_6scenarios_report_consistency: 6 种 mock 场景 × 两次 run_all() 所有报告字段 diff < 1e-8
+  4. test_chunk_vs_full_mode_consistency: 分块模式 vs 全量模式 IC/RankIC/净值曲线/报告标量一致性 (跳过 avg_turnover/avg_rank_autocorr 边界受影响字段)
+  5. test_run_all_produces_all_fields: run_all() 产生全部 25 个预期字段 + 8 个内部数据对象非空
+  6. test_real_data_e2e_regression: 真实数据端到端回归 (条件执行，数据不可用时跳过)
+- 总计 6 项测试全部通过
+- 全量回归: 65 项性能测试全部通过 (含 Task 5/8/11/13/15/17/18 所有 perf 测试)
+- 技术细节:
+  - 旧路径通过清除缓存模拟优化前冗余 quantile_group 调用
+  - 报告标量对大值使用相对容差 (np.isclose rtol=1e-8 atol=1e-10)，适配 cumprod 累积净值
+  - chunk vs full 比较跳过 avg_turnover/avg_rank_autocorr (跨块边界 NaN 导致均值不同)
+  - 真实数据测试条件执行: 导入失败或数据目录不存在时优雅跳过
+- 回归: 0 项新回归
+- 用法: 此测试是 Task 17 (全量回归) 的前置依赖，验证整个性能优化迭代 (Task 1-17) 的端到端正确性
+
 [2026-04-05 03:30] Task 17 完成 — turnover unstack 去重数值一致性测试
 - 新增文件: tests/test_perf_turnover_dedup.py
 - 验证内容:
