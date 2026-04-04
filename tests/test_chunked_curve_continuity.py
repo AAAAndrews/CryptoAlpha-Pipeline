@@ -8,7 +8,11 @@ and rebalance_freq interacts correctly with chunking.
 """
 
 import sys
+import os
 import traceback
+
+# 确保项目根目录在 sys.path 中 / ensure project root is in sys.path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
 import pandas as pd
