@@ -86,7 +86,7 @@
   {
     "id": 15,
     "task": "测试：neutralize 复用数值一致性 (tests/test_perf_neutralize_reuse.py) — 6 种 mock 场景 × neutralized_curve diff < 1e-10、demeaned/group_adjust 组合、chunk_size 模式正确",
-    "passes": false,
+    "passes": true,
     "deps": [14]
   },
   {

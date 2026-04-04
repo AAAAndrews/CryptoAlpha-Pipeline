@@ -3,6 +3,25 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 02:30] Task 15 完成 — neutralize 复用数值一致性测试
+- 新增文件: tests/test_perf_neutralize_reuse.py
+- 验证内容:
+  1. 6 种 mock 场景 × neutralized_curve 与参考实现 diff < 1e-10 (6 checks)
+  2. demeaned/group_adjust 四种组合一致性 (4 checks)
+  3. 不同 n_groups (3/4/5/10) 一致性 (4 checks)
+  4. _raw 模式: raw 曲线直接比较一致 (6 checks)
+  5. chunk_size 分块模式 vs 全量模式: 日收益率 diff < 1e-10 (5 场景 × 3 = 15 checks)
+  6. evaluator.run_neutralize() 与直接调用一致 (6 checks)
+  7. evaluator 缓存复用一致性 (6 checks)
+  8. chunk_size 两次独立运行一致性 (5 checks)
+  9. groups 参数为 Series 时一致性 (6 checks)
+  10. 返回类型和形状验证: 6 场景 × 4 属性 (24 checks)
+- 总计 10 项测试全部通过
+- 参考实现: 模拟旧版 _hedge_return 逻辑 (独立 groupby.apply 构建 hedge 日收益)，支持 _raw 参数
+- 回归: 1352 passed, 1 failed (pre-existing test_task22 __all__ count mismatch)，0 项新回归
+- 用法: 此测试验证 Task 14 (neutralize 复用 calc_portfolio_curves) 的数值一致性，是后续 E2E 基准测试 (Task 18) 的前置依赖
+
+
 [2026-04-05 02:00] Task 14 完成 — 重构 neutralize 复用 calc_portfolio_curves
 - 修改文件: FactorAnalysis/neutralize.py
 - 核心变更: 删除内部 `_hedge_return` 函数及其 `groupby.apply` 调用，替换为 `calc_portfolio_curves(df["factor"], df["returns"], n_groups, top_k=1, bottom_k=1, rebalance_freq=1, _raw=_raw, group_labels=df["label"])` 获取 hedge 曲线
