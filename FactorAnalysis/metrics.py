@@ -18,7 +18,9 @@ def calc_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:
     计算日频 Pearson IC（信息系数）/ Calculate daily Pearson IC (Information Coefficient).
 
     每个时间截面上，计算因子值与前向收益率的 Pearson 相关系数。
+    向量化实现：unstack 为 2D 矩阵后 numpy 批量行级 Pearson 相关，替代 groupby.apply。
     At each time cross-section, compute Pearson correlation between factor and forward returns.
+    Vectorized: unstack to 2D matrix, numpy batch row-level Pearson, replacing groupby.apply.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
@@ -29,18 +31,41 @@ def calc_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:
     """
     df = pd.DataFrame({"factor": factor, "returns": returns})
 
-    def _pearson(g: pd.DataFrame) -> float:
-        if len(g) < 2:
-            return np.nan
-        f = g["factor"]
-        r = g["returns"]
-        # 过滤无效值 / filter invalid values
-        mask = f.notna() & r.notna() & np.isfinite(f) & np.isfinite(r)
-        if mask.sum() < 2:
-            return np.nan
-        return f[mask].corr(r[mask])
+    # unstack 为 2D 矩阵 (timestamp × symbol) / unstack to 2D matrix
+    f_mat = df["factor"].unstack(level=1)
+    r_mat = df["returns"].unstack(level=1)
 
-    return df.groupby(level=0).apply(_pearson)
+    # 有效值掩码：非 NaN 且有限 / valid mask: non-NaN and finite
+    valid = f_mat.notna() & r_mat.notna() & np.isfinite(f_mat) & np.isfinite(r_mat)
+    n_valid = valid.sum(axis=1).astype(float)
+
+    # 将无效值置 NaN，sum(skipna=True) 自动跳过 / set invalid to NaN, sum skips them
+    f_clean = f_mat.where(valid)
+    r_clean = r_mat.where(valid)
+
+    # 向量化 Pearson 公式 / vectorized Pearson formula
+    # r = (n*Σxy - Σx*Σy) / sqrt((n*Σx² - (Σx)²)(n*Σy² - (Σy)²))
+    sum_x = f_clean.sum(axis=1)
+    sum_y = r_clean.sum(axis=1)
+    sum_xy = (f_clean * r_clean).sum(axis=1)
+    sum_x2 = (f_clean ** 2).sum(axis=1)
+    sum_y2 = (r_clean ** 2).sum(axis=1)
+
+    n = n_valid
+    numerator = n * sum_xy - sum_x * sum_y
+    denom_x = n * sum_x2 - sum_x ** 2
+    denom_y = n * sum_y2 - sum_y ** 2
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        denom = np.sqrt(denom_x * denom_y)
+        ic = numerator / denom
+
+    # 边界处理：有效数不足或分母为零返回 NaN / edge cases: insufficient data or zero denom → NaN
+    ic = pd.Series(ic, index=f_mat.index, dtype=float)
+    ic[n < 2] = np.nan
+    ic = ic.replace([np.inf, -np.inf], np.nan)
+
+    return ic
 
 
 def calc_rank_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:

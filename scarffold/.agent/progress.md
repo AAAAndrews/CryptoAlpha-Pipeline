@@ -3,6 +3,22 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 23:00] Task 9 完成 — 向量化 calc_ic (metrics.py)
+- 修改文件: FactorAnalysis/metrics.py
+- 核心变更: calc_ic 从 groupby.apply 逐截面 Python 循环改为 unstack 2D 矩阵 + numpy 向量化 Pearson 批量计算
+- 实现方式: factor/returns unstack 为 (timestamp × symbol) 矩阵，使用 Pearson 公式 r=(n*Σxy-Σx*Σy)/sqrt((n*Σx²-(Σx)²)(n*Σy²-(Σy)²)) 按行批量计算
+- NaN 处理: valid 掩码过滤非有限值，n_valid<2 或分母为零时返回 NaN
+- 公共 API 完全保留: 函数签名、返回类型 (pd.Series indexed by timestamp) 均不变
+- 验证测试: tests/test_perf_ic_vectorized.py (36 checks passed)
+  - 6 种 mock 场景 × IC Series diff < 1e-10 (6 checks)
+  - 极端信号 IC=1.0/-1.0: 向量化与参考实现一致 + 均值验证 (2 checks)
+  - NaN 数据处理: 高比例 NaN + 全 NaN 输入 (2 checks)
+  - 边界情况: 单资产/常数因子/两资产 (3 checks)
+  - 返回类型和形状: 6 场景 × 3 属性 (18 checks)
+  - 既有回归: test_metrics_ic 的 5 项核心断言 (5 checks)
+- 回归: test_metrics_ic (31 checks), test_task08, test_task09, test_chunking 全部通过，无回归
+- 用法: 下游 calc_icir 和 calc_ic_stats 均调用 calc_ic，自动受益于向量化加速；Task 10 将用同样方式向量化 calc_rank_ic
+
 [2026-04-04 22:00] Task 8 完成 — portfolio 合并数值一致性 + 分块兼容测试
 - 新增文件: tests/test_perf_portfolio_merge.py
 - 验证内容:

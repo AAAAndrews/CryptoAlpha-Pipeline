@@ -50,7 +50,7 @@
   {
     "id": 9,
     "task": "向量化 calc_ic (metrics.py)：将 factor/returns unstack 为 2D 矩阵，使用 numpy 批量计算行级 Pearson 相关性，替代 groupby.apply 逐截面调用；保留原函数签名和返回类型",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {
