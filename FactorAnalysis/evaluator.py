@@ -287,41 +287,55 @@ class FactorEvaluator:
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
+        # 尝试复用缓存的分组标签 / try to reuse cached group labels
+        cached_labels = self._cached_group_labels
+
         if self.chunk_size is None:
-            # 全量模式：原有逻辑 / full mode: original logic
+            # 全量模式：原有逻辑 + 缓存复用 / full mode: original logic + cache reuse
             self.long_curve = calc_long_only_curve(
                 self.factor, self.returns,
                 n_groups=self.n_groups, top_k=self.top_k,
+                group_labels=cached_labels,
             )
             self.short_curve = calc_short_only_curve(
                 self.factor, self.returns,
                 n_groups=self.n_groups, bottom_k=self.bottom_k,
+                group_labels=cached_labels,
             )
             self.hedge_curve = calc_top_bottom_curve(
                 self.factor, self.returns,
                 n_groups=self.n_groups, top_k=self.top_k, bottom_k=self.bottom_k,
+                group_labels=cached_labels,
             )
         else:
             # 分块模式：逐块计算 raw 曲线后合并，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
             returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            # 分块缓存标签 / split cached labels into chunks
+            if cached_labels is not None:
+                label_chunks = split_into_chunks(cached_labels, self.chunk_size)
+            else:
+                label_chunks = [None] * len(factor_chunks)
             n_chunks = len(factor_chunks)
 
             # 逐块计算 raw 净值曲线 / compute raw equity curves per chunk
             long_chunks = []
             short_chunks = []
             hedge_chunks = []
-            for i, (fc, rc) in enumerate(zip(factor_chunks, returns_chunks)):
+            for i, (fc, rc, lc) in enumerate(zip(factor_chunks, returns_chunks, label_chunks)):
                 with ChunkMemoryTracker(i, n_chunks, description="run_curves"):
                     long_chunks.append(
-                        calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k, _raw=True)
+                        calc_long_only_curve(fc, rc, n_groups=self.n_groups, top_k=self.top_k,
+                                             _raw=True, group_labels=lc)
                     )
                     short_chunks.append(
-                        calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k, _raw=True)
+                        calc_short_only_curve(fc, rc, n_groups=self.n_groups, bottom_k=self.bottom_k,
+                                              _raw=True, group_labels=lc)
                     )
                     hedge_chunks.append(
                         calc_top_bottom_curve(fc, rc, n_groups=self.n_groups,
-                                              top_k=self.top_k, bottom_k=self.bottom_k, _raw=True)
+                                             top_k=self.top_k, bottom_k=self.bottom_k,
+                                             _raw=True, group_labels=lc)
                     )
 
             # 合并 raw 曲线并覆写起始值 / merge raw curves and overwrite start
@@ -371,21 +385,31 @@ class FactorEvaluator:
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
+        # 尝试复用缓存的分组标签 / try to reuse cached group labels
+        cached_labels = self._cached_group_labels
+
         if self.chunk_size is None:
-            # 全量模式：原有逻辑 / full mode: original logic
-            self.turnover = calc_turnover(self.factor, n_groups=self.n_groups)
+            # 全量模式：原有逻辑 + 缓存复用 / full mode: original logic + cache reuse
+            self.turnover = calc_turnover(
+                self.factor, n_groups=self.n_groups, group_labels=cached_labels,
+            )
             self.rank_autocorr = calc_rank_autocorr(self.factor)
         else:
             # 分块模式：逐块计算换手率和排名自相关，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            # 分块缓存标签 / split cached labels into chunks
+            if cached_labels is not None:
+                label_chunks = split_into_chunks(cached_labels, self.chunk_size)
+            else:
+                label_chunks = [None] * len(factor_chunks)
             n_chunks = len(factor_chunks)
 
             # 逐块计算换手率和排名自相关 / compute turnover and rank autocorrelation per chunk
             turnover_chunks = []
             autocorr_chunks = []
-            for i, fc in enumerate(factor_chunks):
+            for i, (fc, lc) in enumerate(zip(factor_chunks, label_chunks)):
                 with ChunkMemoryTracker(i, n_chunks, description="run_turnover"):
-                    turnover_chunks.append(calc_turnover(fc, n_groups=self.n_groups))
+                    turnover_chunks.append(calc_turnover(fc, n_groups=self.n_groups, group_labels=lc))
                     autocorr_chunks.append(calc_rank_autocorr(fc))
 
             # 汇总：跨块边界首行设为 NaN / merge: boundary rows set to NaN
@@ -429,22 +453,33 @@ class FactorEvaluator:
         if n_groups is None:
             n_groups = self.n_groups
 
+        # 当 groups 与 run_grouping 使用相同时，复用缓存 / reuse cache when groups matches run_grouping
+        use_cache = (
+            self._cached_group_labels is not None
+            and isinstance(groups, int)
+            and groups == self.n_groups
+        )
+        neutralize_groups: pd.Series | int = (
+            self._cached_group_labels if use_cache else groups
+        )
+
         if self.chunk_size is None:
-            # 全量模式：原有逻辑 / full mode: original logic
+            # 全量模式：原有逻辑 + 缓存复用 / full mode: original logic + cache reuse
             self.neutralized_curve = calc_neutralized_curve(
                 self.factor, self.returns,
-                groups=groups, demeaned=demeaned, group_adjust=group_adjust, n_groups=n_groups,
+                groups=neutralize_groups, demeaned=demeaned, group_adjust=group_adjust,
+                n_groups=n_groups,
             )
         else:
             # 分块模式：逐块计算 raw 中性化曲线后合并，带内存监控 / chunked mode with memory tracking
             factor_chunks = split_into_chunks(self.factor, self.chunk_size)
             returns_chunks = split_into_chunks(self.returns, self.chunk_size)
 
-            # 当 groups 为 pd.Series 时也需要分块 / split groups Series if provided
-            if isinstance(groups, pd.Series):
-                groups_chunks = split_into_chunks(groups, self.chunk_size)
+            # 分块 groups / split groups into chunks
+            if isinstance(neutralize_groups, pd.Series):
+                groups_chunks = split_into_chunks(neutralize_groups, self.chunk_size)
             else:
-                groups_chunks = [groups] * len(factor_chunks)
+                groups_chunks = [neutralize_groups] * len(factor_chunks)
 
             n_chunks = len(factor_chunks)
             neutralized_chunks = []

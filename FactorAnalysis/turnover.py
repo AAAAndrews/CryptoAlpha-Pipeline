@@ -7,13 +7,19 @@ Quantile turnover measures member changes in groups between consecutive periods.
 Rank autocorrelation measures persistence of cross-sectional ranks over time.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
 from .grouping import quantile_group
 
 
-def calc_turnover(factor: pd.Series, n_groups: int = 5) -> pd.DataFrame:
+def calc_turnover(
+    factor: pd.Series,
+    n_groups: int = 5,
+    group_labels: pd.Series | None = None,
+) -> pd.DataFrame:
     """
     计算分组换手率 / Calculate quantile group turnover.
 
@@ -28,6 +34,8 @@ def calc_turnover(factor: pd.Series, n_groups: int = 5) -> pd.DataFrame:
                 Factor values, MultiIndex (timestamp, symbol)
         n_groups: 分组数量，默认 5
                   Number of groups, default 5
+        group_labels: 预计算分组标签，传入时跳过内部 quantile_group
+                      Pre-computed group labels; skip quantile_group when provided
 
     Returns / 返回:
         pd.DataFrame: columns 为分组标签 (0 ~ n_groups-1)，index 为 timestamp。
@@ -51,8 +59,8 @@ def calc_turnover(factor: pd.Series, n_groups: int = 5) -> pd.DataFrame:
     if len(factor) == 0:
         raise ValueError("factor 不能为空 / factor must not be empty")
 
-    # 获取分组标签 / get group labels
-    labels = quantile_group(factor, n_groups=n_groups)
+    # 获取分组标签：优先使用预计算，否则内部计算 / get labels: prefer pre-computed, else compute
+    labels = group_labels if group_labels is not None else quantile_group(factor, n_groups=n_groups)
 
     # 对每个分组计算换手率 / compute turnover for each group
     results = {}

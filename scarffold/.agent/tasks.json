@@ -20,7 +20,7 @@
   {
     "id": 4,
     "task": "将 group_labels 缓存接入 run_curves/run_turnover/run_neutralize：三个方法检查 _cached_group_labels 是否存在，存在时传递给下游函数跳过冗余 quantile_group 调用；同步适配 chunk_size 分块模式（每块独立缓存）",
-    "passes": false,
+    "passes": true,
     "deps": [2, 3]
   },
   {

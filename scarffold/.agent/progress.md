@@ -3,6 +3,29 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 18:30] Task 4 完成 — group_labels 缓存接入 run_curves/run_turnover/run_neutralize
+- 修改文件: FactorAnalysis/evaluator.py, FactorAnalysis/turnover.py
+- evaluator.py 变更:
+  - run_curves(): 检查 `_cached_group_labels`，存在时传递给 calc_long_only_curve/calc_short_only_curve/calc_top_bottom_curve 的 `group_labels` 参数
+  - run_turnover(): 检查 `_cached_group_labels`，存在时传递给 calc_turnover 的 `group_labels` 参数
+  - run_neutralize(): 当 `groups == self.n_groups`（默认值）且缓存存在时，使用缓存替代 int 参数；groups 不同时跳过缓存
+  - 三个方法均同步适配 chunk_size 分块模式：缓存标签通过 split_into_chunks 分块后逐块传递
+- turnover.py 变更:
+  - 新增 `from __future__ import annotations` (Python 3.9 兼容)
+  - calc_turnover 新增 `group_labels: pd.Series | None = None` 参数，传入时跳过内部 quantile_group 调用
+- 验证测试: tests/test_perf_cache_pass_through.py (9 checks passed)
+  - 向后兼容: 缓存为 None 时行为不变
+  - 全量模式: 有/无缓存 run_curves 三条曲线 diff < 1e-10
+  - 全量模式: 有/无缓存 run_turnover DataFrame diff < 1e-10
+  - 全量模式: 有/无缓存 run_neutralize 曲线 diff < 1e-10
+  - neutralize groups!=n_groups 时正确跳过缓存
+  - 分块模式: 三方法有/无缓存 chunk_size=50 diff < 1e-10
+  - run_all() 全流程有/无缓存 6 种场景 × 6 指标 diff < 1e-10
+- 用法: run_all() 中 run_grouping() 后自动缓存，下游 run_curves/run_turnover/run_neutralize 均复用缓存，消除冗余 quantile_group 调用
+
+> Append newest entries to the top in this format:
+> `[YYYY-MM-DD HH:MM] summary`
+
 [2026-04-04 17:30] Task 3 完成 — portfolio 预计算 group_labels 支持
 - 修改文件: FactorAnalysis/portfolio.py
 - 新增 `from __future__ import annotations` (兼容 Python 3.9 的 `X | None` 语法)
