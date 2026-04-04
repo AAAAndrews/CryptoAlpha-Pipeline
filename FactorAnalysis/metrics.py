@@ -73,7 +73,9 @@ def calc_rank_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:
     计算日频 Spearman Rank IC（秩信息系数）/ Calculate daily Spearman Rank IC.
 
     每个时间截面上，计算因子值与前向收益率的 Spearman 秩相关系数。
+    向量化实现：unstack 为 2D 矩阵，按行排名后 numpy 批量 Pearson 相关，替代 groupby.apply。
     At each time cross-section, compute Spearman rank correlation between factor and forward returns.
+    Vectorized: unstack to 2D matrix, rank per-row, numpy batch Pearson, replacing groupby.apply.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values, MultiIndex (timestamp, symbol)
@@ -84,18 +86,47 @@ def calc_rank_ic(factor: pd.Series, returns: pd.Series) -> pd.Series:
     """
     df = pd.DataFrame({"factor": factor, "returns": returns})
 
-    def _spearman(g: pd.DataFrame) -> float:
-        if len(g) < 2:
-            return np.nan
-        f = g["factor"]
-        r = g["returns"]
-        # 过滤无效值 / filter invalid values
-        mask = f.notna() & r.notna() & np.isfinite(f) & np.isfinite(r)
-        if mask.sum() < 2:
-            return np.nan
-        return f[mask].corr(r[mask], method="spearman")
+    # unstack 为 2D 矩阵 (timestamp × symbol) / unstack to 2D matrix
+    f_mat = df["factor"].unstack(level=1)
+    r_mat = df["returns"].unstack(level=1)
 
-    return df.groupby(level=0).apply(_spearman)
+    # 有效值掩码：非 NaN 且有限 / valid mask: non-NaN and finite
+    valid = f_mat.notna() & r_mat.notna() & np.isfinite(f_mat) & np.isfinite(r_mat)
+    n_valid = valid.sum(axis=1).astype(float)
+
+    # 先用 valid 掩码屏蔽无效值，再按行排名（确保排名范围与参考实现一致）/ mask invalid first, then rank
+    # 参考实现仅对 factor 和 returns 同时有效的样本排名 / reference ranks only jointly-valid samples
+    f_masked = f_mat.where(valid)
+    r_masked = r_mat.where(valid)
+    f_ranked = f_masked.rank(axis=1, method="average", na_option="keep")
+    r_ranked = r_masked.rank(axis=1, method="average", na_option="keep")
+
+    # 仅保留有效值 / keep only valid entries
+    f_clean = f_ranked.where(valid)
+    r_clean = r_ranked.where(valid)
+
+    # 向量化 Pearson 公式（作用于排名后的数据）/ vectorized Pearson on ranked data
+    sum_x = f_clean.sum(axis=1)
+    sum_y = r_clean.sum(axis=1)
+    sum_xy = (f_clean * r_clean).sum(axis=1)
+    sum_x2 = (f_clean ** 2).sum(axis=1)
+    sum_y2 = (r_clean ** 2).sum(axis=1)
+
+    n = n_valid
+    numerator = n * sum_xy - sum_x * sum_y
+    denom_x = n * sum_x2 - sum_x ** 2
+    denom_y = n * sum_y2 - sum_y ** 2
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        denom = np.sqrt(denom_x * denom_y)
+        rank_ic = numerator / denom
+
+    # 边界处理：有效数不足或分母为零返回 NaN / edge cases: insufficient data or zero denom → NaN
+    rank_ic = pd.Series(rank_ic, index=f_mat.index, dtype=float)
+    rank_ic[n < 2] = np.nan
+    rank_ic = rank_ic.replace([np.inf, -np.inf], np.nan)
+
+    return rank_ic
 
 
 def calc_icir(factor: pd.Series, returns: pd.Series) -> float:

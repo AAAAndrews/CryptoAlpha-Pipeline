@@ -56,7 +56,7 @@
   {
     "id": 10,
     "task": "向量化 calc_rank_ic (metrics.py)：将 factor/returns unstack 为 2D 矩阵，使用 scipy.stats.rankdata 按列排名后 numpy Pearson 批量计算，替代 groupby.apply；保留原函数签名和返回类型",
-    "passes": false,
+    "passes": true,
     "deps": [9]
   },
   {

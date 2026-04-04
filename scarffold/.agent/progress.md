@@ -3,6 +3,22 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 23:30] Task 10 完成 — 向量化 calc_rank_ic (metrics.py)
+- 修改文件: FactorAnalysis/metrics.py
+- 核心变更: calc_rank_ic 从 groupby.apply 逐截面 _spearman 内部函数改为 unstack 2D 矩阵 + pandas 行级排名 + numpy 向量化 Pearson 批量计算
+- 实现方式: factor/returns unstack 为 (timestamp × symbol) 矩阵，先用 valid 掩码屏蔽无效值，再用 pandas.DataFrame.rank(axis=1, method='average') 按行排名（等价于 scipy.stats.rankdata 平均秩法），最后复用与 calc_ic 相同的 numpy Pearson 公式
+- NaN 处理: valid 掩码过滤非有限值，先 where(valid) 再 rank 确保排名范围与参考实现一致（仅对 factor 和 returns 同时有效的样本排名），n_valid<2 或分母为零时返回 NaN
+- 公共 API 完全保留: 函数签名、返回类型 (pd.Series indexed by timestamp) 均不变
+- 验证测试: tests/test_perf_rank_ic_vectorized.py (37 checks passed)
+  - 6 种 mock 场景 × Rank IC Series diff < 1e-10 (6 checks)
+  - 极端信号 Rank IC=1.0/-1.0: 向量化与参考实现一致 + 均值验证 (2 checks)
+  - NaN 数据处理: 高比例 NaN + 全 NaN 输入 (2 checks)
+  - 边界情况: 单资产/常数因子/两资产/含大量平值(ties) (4 checks)
+  - 返回类型和形状: 6 场景 × 3 属性 (18 checks)
+  - 既有回归: test_calc_rank_ic 的 5 项核心断言 (5 checks)
+- 回归: test_metrics_ic (31 checks) 全部通过，无回归
+- 用法: 下游 calc_icir 和 calc_ic_stats 均调用 calc_ic（非 calc_rank_ic），Rank IC 独立使用；Task 11 将用统一测试验证 IC/RankIC 向量化整体正确性
+
 [2026-04-04 23:00] Task 9 完成 — 向量化 calc_ic (metrics.py)
 - 修改文件: FactorAnalysis/metrics.py
 - 核心变更: calc_ic 从 groupby.apply 逐截面 Python 循环改为 unstack 2D 矩阵 + numpy 向量化 Pearson 批量计算
