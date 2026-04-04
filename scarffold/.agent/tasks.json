@@ -8,7 +8,7 @@
   {
     "id": 2,
     "task": "FactorEvaluator 新增 group_labels 缓存机制：添加 _cached_group_labels 属性 + _set_group_cache(group_labels) / _clear_group_cache() 内部方法，run_grouping() 执行后自动缓存，_raw=True 参数不影响缓存",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {

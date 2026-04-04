@@ -96,6 +96,9 @@ class FactorEvaluator:
         # 分组标签 / Group labels
         self.group_labels: pd.Series | None = None
 
+        # 分组标签内部缓存 / Internal group_labels cache (避免下游重复 quantile_group 调用)
+        self._cached_group_labels: pd.Series | None = None
+
         # 净值曲线 / Equity curves
         self.long_curve: pd.Series | None = None
         self.short_curve: pd.Series | None = None
@@ -118,6 +121,32 @@ class FactorEvaluator:
 
         # 中性化净值曲线 / Neutralized equity curve
         self.neutralized_curve: pd.Series | None = None
+
+    # --- 缓存管理 / Cache management ---
+
+    def _set_group_cache(self, group_labels: pd.Series) -> None:
+        """
+        设置分组标签缓存 / Set the group_labels cache.
+
+        缓存 run_grouping() 计算结果，供下游 run_curves/run_turnover/run_neutralize
+        复用，跳过冗余 quantile_group 调用。
+        Caches run_grouping() result for downstream methods to reuse,
+        skipping redundant quantile_group calls.
+
+        Parameters / 参数:
+            group_labels: 分组标签，MultiIndex (timestamp, symbol)
+                          Group labels, MultiIndex (timestamp, symbol)
+        """
+        self._cached_group_labels = group_labels
+
+    def _clear_group_cache(self) -> None:
+        """
+        清除分组标签缓存 / Clear the group_labels cache.
+
+        在需要强制重新计算分组标签时调用（如因子数据变更后）。
+        Called when group labels need to be recomputed (e.g., after factor data change).
+        """
+        self._cached_group_labels = None
 
     # --- 内部校验 / Internal validation ---
 
@@ -236,6 +265,9 @@ class FactorEvaluator:
                     )
             # 分组标签按时间截面独立，直接拼接 / labels independent per timestamp, concat
             self.group_labels = merge_chunk_results(chunk_labels, "ic")
+
+        # 自动缓存分组结果，供下游复用 / auto-cache for downstream reuse
+        self._set_group_cache(self.group_labels)
 
         return self
 
