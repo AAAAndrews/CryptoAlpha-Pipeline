@@ -26,7 +26,7 @@
   {
     "id": 5,
     "task": "测试：quantile_group 缓存数值一致性 + 分块兼容 (tests/test_perf_quantile_cache.py) — 验证缓存/非缓存结果完全一致、run_all() 中 quantile_group 仅调用 1 次、6 种 mock 场景 × 12 指标 diff < 1e-10、chunk_size 模式缓存正确",
-    "passes": false,
+    "passes": true,
     "deps": [4]
   },
   {

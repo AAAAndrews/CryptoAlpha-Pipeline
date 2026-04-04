@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 19:00] Task 5 完成 — quantile_group 缓存数值一致性 + 分块兼容
+- 新增文件: tests/test_perf_quantile_cache.py
+- 验证内容:
+  1. quantile_group 调用次数: 全量模式 2 次 (1 主分组 + 1 neutralize ranking)，优化前 6-7 次
+  2. quantile_group 调用次数: 分块模式 2×n_chunks 次，每块主分组仅 1 次
+  3. 6 场景 × 12 标量报告指标: 两次独立 run_all() diff < 1e-10 (72 checks)
+  4. 6 场景 × 9 核心数据对象: ic/rank_ic/long/short/hedge/hedge_cost/turnover/rank_autocorr/neutralized (54 checks)
+  5. 6 场景 × 5 单独方法: run_curves/run_turnover/run_neutralize 有缓存 vs 无缓存一致 (30 checks)
+  6. 5 场景 × 6 分块模式: chunk_size=50 结果一致性 (30 checks)
+- 总计 197 checks passed
+- 技术细节: 使用 unittest.mock.patch 同步 patch 4 个模块的 quantile_group 引用 (evaluator/portfolio/turnover/neutralize) 进行调用计数
+- 用法: 此测试验证 tasks 1-4 的缓存优化整体正确性，是后续优化任务 (IC 向量化/portfolio 合并等) 的回归基线
+
 [2026-04-04 18:30] Task 4 完成 — group_labels 缓存接入 run_curves/run_turnover/run_neutralize
 - 修改文件: FactorAnalysis/evaluator.py, FactorAnalysis/turnover.py
 - evaluator.py 变更:
