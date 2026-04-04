@@ -97,9 +97,11 @@ def calc_rank_autocorr(factor: pd.Series, lag: int = 1) -> pd.Series:
 
     对每个时间截面内的因子值做横截面排名（rank），
     然后计算相邻时间截面排名向量的 Pearson 相关系数。
+    向量化实现：unstack 为 2D 矩阵后 numpy 批量行级 Pearson 相关，替代逐截面 xs+corr 循环。
     值域 [-1, 1]，越接近 1 说明因子排名越稳定（衰减越慢）。
     Rank factor values within each cross-section, then compute Pearson
     correlation between consecutive periods' rank vectors.
+    Vectorized: unstack to 2D matrix, numpy batch row-level Pearson, replacing xs+corr loop.
     Value range [-1, 1], closer to 1 means more persistent ranks.
 
     Parameters / 参数:
@@ -126,29 +128,49 @@ def calc_rank_autocorr(factor: pd.Series, lag: int = 1) -> pd.Series:
     # 横截面排名 / cross-sectional ranking
     ranks = factor.groupby(level=0, group_keys=False).rank()
 
-    # 按时间排序的截面列表 / sorted time cross-sections
-    timestamps = sorted(ranks.index.get_level_values(0).unique())
+    # unstack 为 2D 矩阵 (timestamp × symbol) / unstack to 2D matrix
+    ranks_mat = ranks.unstack(level=1)
+    timestamps = ranks_mat.index
 
     if len(timestamps) <= lag:
         # 时间截面不足以计算自相关 / not enough periods for autocorrelation
         return pd.Series(np.nan, index=timestamps, dtype=np.float64)
 
-    autocorr = pd.Series(np.nan, index=timestamps, dtype=np.float64)
+    # 滞后矩阵：将排名矩阵按行下移 lag 行 / shifted matrix: shift rows down by lag
+    shifted_mat = ranks_mat.shift(lag)
 
-    for i in range(lag, len(timestamps)):
-        t_curr = timestamps[i]
-        t_prev = timestamps[i - lag]
+    # 有效值掩码：当前行和滞后行均非 NaN / valid mask: both current and lagged are non-NaN
+    valid = ranks_mat.notna() & shifted_mat.notna()
+    n_valid = valid.sum(axis=1).astype(float)
 
-        # 取两个截面的排名值 / get rank values for both periods
-        curr = ranks.xs(t_curr, level=0).dropna()
-        prev = ranks.xs(t_prev, level=0).dropna()
+    # 将无效值置 NaN，sum(skipna=True) 自动跳过 / set invalid to NaN, sum skips them
+    x = ranks_mat.where(valid)
+    y = shifted_mat.where(valid)
 
-        # 仅计算共有的资产 / only compute for common assets
-        common = curr.index.intersection(prev.index)
+    # 向量化 Pearson 公式 / vectorized Pearson formula
+    # r = (n*Σxy - Σx*Σy) / sqrt((n*Σx² - (Σx)²)(n*Σy² - (Σy)²))
+    sum_x = x.sum(axis=1)
+    sum_y = y.sum(axis=1)
+    sum_xy = (x * y).sum(axis=1)
+    sum_x2 = (x ** 2).sum(axis=1)
+    sum_y2 = (y ** 2).sum(axis=1)
 
-        if len(common) < 2:
-            autocorr[t_curr] = np.nan
-        else:
-            autocorr[t_curr] = curr[common].corr(prev[common])
+    n = n_valid
+    numerator = n * sum_xy - sum_x * sum_y
+    denom_x = n * sum_x2 - sum_x ** 2
+    denom_y = n * sum_y2 - sum_y ** 2
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        denom = np.sqrt(denom_x * denom_y)
+        autocorr = numerator / denom
+
+    autocorr = pd.Series(autocorr, index=timestamps, dtype=float)
+
+    # 前 lag 期无前序，强制 NaN / first lag periods have no predecessor, force NaN
+    autocorr.iloc[:lag] = np.nan
+
+    # 有效数不足或分母为零返回 NaN / insufficient data or zero denom → NaN
+    autocorr[n < 2] = np.nan
+    autocorr = autocorr.replace([np.inf, -np.inf], np.nan)
 
     return autocorr

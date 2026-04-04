@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 01:00] Task 12 完成 — 向量化 calc_rank_autocorr (turnover.py)
+- 修改文件: FactorAnalysis/turnover.py (已有向量化实现，本次完成验证)
+- 核心实现: calc_rank_autocorr 使用 unstack 2D 矩阵 + numpy 批量行级 Pearson 相关，替代逐截面 xs+corr 纯 Python 循环
+- 实现方式: factor.groupby(level=0).rank() 横截面排名 → unstack 为 (timestamp × symbol) 矩阵 → shift(lag) 构建滞后矩阵 → numpy Pearson 公式 r=(n*Σxy-Σx*Σy)/sqrt((n*Σx²-(Σx)²)(n*Σy²-(Σy)²)) 批量计算
+- NaN 处理: valid 掩码过滤非有限值，n_valid<2 或分母为零时返回 NaN，前 lag 期强制 NaN
+- 公共 API 完全保留: 函数签名 (factor, lag=1)、返回类型 (pd.Series indexed by timestamp) 均不变
+- 验证测试: tests/test_perf_rank_autocorr.py (44 checks passed)
+  - 6 种 mock 场景 × rank_autocorr Series diff < 1e-10 (6 checks)
+  - 极端信号 autocorr=1.0: 向量化与参考实现一致 + 均值验证 (2 checks)
+  - 极端信号 autocorr=-1.0: 振荡因子排名反转一致 + 均值验证 (2 checks)
+  - NaN 数据处理: 高比例 NaN + 全 NaN 输入 (3 checks)
+  - 边界情况: 最小数据/单期/单资产 (3 checks)
+  - lag 参数: lag=2 和 lag=5 一致性 + 前期 NaN (4 checks)
+  - 返回类型和形状: 6 场景 × 3 属性 (18 checks)
+  - 既有回归: 稳定/振荡因子/值域/参数校验 (6 checks)
+- 回归: test_task12_turnover (23 checks) 全部通过，无回归
+- 用法: 下游 Task 13 将用统一测试验证 rank_autocorr 向量化数值一致性
+
 [2026-04-05 00:30] Task 11 完成 — IC/RankIC 向量化整体数值一致性统一测试
 - 新增文件: tests/test_perf_ic_rankic_unified.py
 - 验证内容:

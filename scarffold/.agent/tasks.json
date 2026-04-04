@@ -68,7 +68,7 @@
   {
     "id": 12,
     "task": "向量化 calc_rank_autocorr (turnover.py)：将 ranks unstack 为 2D 矩阵，使用 numpy 批量计算相邻行 Pearson 相关性，替代逐截面 xs+corr 纯 Python 循环；保留原函数签名和返回类型",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {
