@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-04 17:30] Task 3 完成 — portfolio 预计算 group_labels 支持
+- 修改文件: FactorAnalysis/portfolio.py
+- 新增 `from __future__ import annotations` (兼容 Python 3.9 的 `X | None` 语法)
+- `_calc_labels_with_rebalance` 新增 `group_labels: pd.Series | None = None` 可选参数
+  - rebalance_freq=1 时: 传入 group_labels 直接返回，跳过 quantile_group
+  - rebalance_freq>1 时: 传入 group_labels 仅在调仓日取值 + ffill，跳过 quantile_group
+  - 不传时保持原有行为（向后兼容）
+- `calc_long_only_curve` / `calc_short_only_curve` / `calc_top_bottom_curve` 均新增 `group_labels` 参数并透传
+- 验证测试: tests/test_perf_portfolio_group_labels.py (11 checks passed)
+  - 向后兼容: 不传 group_labels 行为不变
+  - 预计算标签: rebalance_freq=1 和 >1 均与内部计算结果一致
+  - 三函数: long/short/hedge 传入 group_labels 结果一致
+  - 6 种 mock 场景全覆盖
+- 用法: 下游 run_curves() 可传入 evaluator._cached_group_labels 跳过冗余 quantile_group 调用
+
 [2026-04-04 16:00] Task 2 完成 — FactorEvaluator group_labels 缓存机制
 - 修改文件: FactorAnalysis/evaluator.py
 - 新增属性: `self._cached_group_labels` (初始化为 None)

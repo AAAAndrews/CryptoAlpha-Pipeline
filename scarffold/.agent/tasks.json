@@ -14,7 +14,7 @@
   {
     "id": 3,
     "task": "重构 portfolio._calc_labels_with_rebalance 支持预计算 group_labels：新增 group_labels 可选参数，传入时跳过内部 quantile_group 调用直接使用，不传时保持原有行为（向后兼容）",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {
