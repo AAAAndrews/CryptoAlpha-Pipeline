@@ -52,6 +52,8 @@ def run_factor_research(
     leak_block: bool = False,
     # 可视化输出参数 / Visualization output parameters
     viz_output: str | None = "output/viz/",
+    # 分块处理参数 / Chunked processing parameters
+    chunk_size: int | None = None,
 ):
     """
     执行完整因子投研流程 / Execute the full factor research pipeline.
@@ -75,8 +77,7 @@ def run_factor_research(
         check_leak: 是否在评估前执行未来函数检测 / Run future leak detection before evaluation
         leak_block: 检测 FAIL 时是否阻断 pipeline / Block pipeline on detection failure
         viz_output: 可视化输出目录，None 时跳过可视化 / Visualization output dir, None to skip
-
-    Returns / 返回:
+        chunk_size: 分块大小，None 时全量模式 / Chunk size, None for full mode
         tuple: (evaluator, report) — FactorEvaluator 实例和摘要报告 DataFrame
     """
     pipeline_start = time.time()
@@ -221,6 +222,7 @@ def run_factor_research(
         cost_rate=cost_rate,
         risk_free_rate=risk_free_rate,
         periods_per_year=periods_per_year,
+        chunk_size=chunk_size,
     )
 
     step_start = time.time()
@@ -412,6 +414,12 @@ def main():
         help="可视化输出目录，设为 none 跳过 (default: output/viz/)",
     )
 
+    # 分块处理参数 / Chunked processing parameters
+    parser.add_argument(
+        "--chunk-size", type=int, default=None,
+        help="分块大小，控制内存峰值。None 为全量模式 (default: None)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -439,6 +447,7 @@ def main():
             check_leak=args.check_leak,
             leak_block=args.leak_block,
             viz_output=viz_dir,
+            chunk_size=args.chunk_size,
         )
     except KeyboardInterrupt:
         print("\n\nUser interrupts and exits the program...")
