@@ -74,7 +74,7 @@
   {
     "id": 13,
     "task": "测试：rank_autocorr 向量化数值一致性 (tests/test_perf_rank_autocorr.py) — 6 种 mock 场景 × rank_autocorr Series diff < 1e-10、边界情况 (最小数据/全 NaN/lag 参数)",
-    "passes": false,
+    "passes": true,
     "deps": [12]
   },
   {

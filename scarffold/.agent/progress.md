@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 01:30] Task 13 完成 — rank_autocorr 向量化数值一致性测试
+- 测试文件: tests/test_perf_rank_autocorr.py (已有，Task 12 同步创建)
+- 验证内容: 44 checks passed
+  - 6 种 mock 场景 × rank_autocorr Series diff < 1e-10 (6 checks)
+  - 极端信号 autocorr=1.0: 向量化与参考实现一致 + 均值验证 (2 checks)
+  - 极端信号 autocorr=-1.0: 振荡因子排名反转一致 + 均值验证 (2 checks)
+  - NaN 数据处理: 高比例 NaN + 全 NaN 输入 (3 checks)
+  - 边界情况: 最小数据/单期/单资产 (3 checks)
+  - lag 参数: lag=2 和 lag=5 一致性 + 前期 NaN (4 checks)
+  - 返回类型和形状: 6 场景 × 3 属性 (18 checks)
+  - 既有回归: 稳定/振荡因子/值域/参数校验 (6 checks)
+- 参考实现: 逐截面 xs+corr 的 calc_rank_autocorr_reference (Pearson)
+- 回归: 0 项回归，所有既有测试保持通过
+- 用法: 此测试验证 Task 12 (calc_rank_autocorr 向量化) 的数值一致性，是后续 E2E 基准测试 (Task 18) 的前置依赖
+
 [2026-04-05 01:00] Task 12 完成 — 向量化 calc_rank_autocorr (turnover.py)
 - 修改文件: FactorAnalysis/turnover.py (已有向量化实现，本次完成验证)
 - 核心实现: calc_rank_autocorr 使用 unstack 2D 矩阵 + numpy 批量行级 Pearson 相关，替代逐截面 xs+corr 纯 Python 循环
