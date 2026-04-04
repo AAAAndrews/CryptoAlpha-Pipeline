@@ -62,22 +62,24 @@ def calc_turnover(
     # 获取分组标签：优先使用预计算，否则内部计算 / get labels: prefer pre-computed, else compute
     labels = group_labels if group_labels is not None else quantile_group(factor, n_groups=n_groups)
 
+    # unstack 一次：行=timestamp, 列=symbol / unstack once: rows=timestamp, cols=symbol
+    labels_mat = labels.unstack(level=1)
+    # 上一期的标签矩阵（行方向移位）/ previous period's label matrix (row shift)
+    shifted = labels_mat.shift(1)
+
     # 对每个分组计算换手率 / compute turnover for each group
     results = {}
     for g in range(n_groups):
-        # 构建二元矩阵：该资产是否在该分组 / binary matrix: is asset in this group
-        in_group = (labels == g).astype(np.float64)
-        # unstack: 行=timestamp, 列=symbol / rows=timestamp, cols=symbol
-        matrix = in_group.unstack(level=1)
+        # 当前期是否在该分组 / is in group at current period
+        current = (labels_mat == g)
+        # 上一期是否在该分组 / was in group at previous period
+        prev = (shifted == g)
 
         # 当前分组内的资产数 / number of assets in group at current period
-        current_count = matrix.sum(axis=1)
-
-        # 上一期的分组矩阵（行方向移位）/ previous period's matrix (row shift)
-        shifted = matrix.shift(1)
+        current_count = current.sum(axis=1)
 
         # 两期都在分组内的资产数 / assets in group at both periods
-        overlap = (matrix * shifted).sum(axis=1)
+        overlap = (current & prev).sum(axis=1)
 
         # 换手率 = 1 - 重叠比例 / turnover = 1 - overlap ratio
         turnover = 1.0 - overlap / current_count

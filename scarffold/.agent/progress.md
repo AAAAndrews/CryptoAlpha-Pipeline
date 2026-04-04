@@ -3,6 +3,17 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 03:00] Task 16 完成 — 去重 calc_turnover 中的 unstack
+- 修改文件: FactorAnalysis/turnover.py
+- 核心变更: 将 for g in range(n_groups) 循环内每次 `in_group.unstack(level=1)` 改为先 `labels.unstack(level=1)` 一次得到 2D 矩阵 (timestamp × symbol)，再对所有组用布尔矩阵比较计算换手率
+- 优化前: n_groups 次 unstack 调用 (每次循环独立 unstack)
+- 优化后: 1 次 unstack 调用 + shifted 一次，循环内仅做布尔比较和 sum
+- 实现方式: labels_mat = labels.unstack(level=1), shifted = labels_mat.shift(1), 循环内 current=(labels_mat==g), prev=(shifted==g), overlap=(current&prev).sum(axis=1)
+- 公共 API 完全保留: calc_turnover 签名、参数、返回类型均不变
+- 验证测试: 74 项既有 turnover 测试全部通过 (test_task12_turnover 23 checks + test_task13_turnover_verify 51 checks)，无回归
+- 回归: 0 项回归，所有既有测试保持通过
+- 用法: 下游 Task 17 将编写测试验证 turnover unstack 去重后的数值一致性（6 种 mock 场景 × 不同 n_groups × 含 NaN 数据 × chunk_size 模式）
+
 [2026-04-05 02:30] Task 15 完成 — neutralize 复用数值一致性测试
 - 新增文件: tests/test_perf_neutralize_reuse.py
 - 验证内容:

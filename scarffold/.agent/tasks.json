@@ -92,7 +92,7 @@
   {
     "id": 16,
     "task": "去重 calc_turnover 中的 unstack (turnover.py)：将 for g in range(n_groups) 循环内重复 unstack 改为 unstack 一次后向量化计算所有组换手率；保留原函数签名和返回类型",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {
