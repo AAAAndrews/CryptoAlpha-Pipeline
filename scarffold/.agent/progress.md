@@ -3,6 +3,29 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 03:30] Task 17 完成 — turnover unstack 去重数值一致性测试
+- 新增文件: tests/test_perf_turnover_dedup.py
+- 验证内容:
+  1. 6 种 mock 场景 × turnover DataFrame diff < 1e-10 (6 checks)
+  2. 不同 n_groups (3/4/5/10) 一致性 (4 checks)
+  3. 预计算 group_labels 传入一致性 (6 checks)
+  4. 高比例 NaN (10%) × turnover DataFrame 一致 (1 check)
+  5. 全 NaN 输入 → 全 NaN 输出 (2 checks)
+  6. 单期/最小数据边界情况 (2 checks)
+  7. 稳定因子换手率 = 0 (2 checks)
+  8. 6 种场景 × 值域 [0, 1] (6 checks)
+  9. 6 种场景 × 返回类型/形状 (24 checks)
+  10. chunk_size 分块模式 vs 全量模式: 排除跨块边界行后 diff < 1e-10 (5 checks)
+  11. chunk_size 两次独立运行一致性 (5 checks)
+  12. evaluator.run_turnover() 与直接调用一致 (6 checks)
+  13. evaluator 缓存复用一致性 (6 checks)
+  14. 既有回归: 稳定因子/值域/参数校验 (5 checks)
+- 总计 80 项检查全部通过
+- 参考实现: calc_turnover_reference 模拟 Task 16 之前的逻辑（每分组独立 unstack），验证优化后单次 unstack 结果一致
+- 技术细节: chunk_size vs 全量模式比较时需排除跨块边界行（merge_chunk_results 将后续每块首行设为 NaN），仅比较有效数据行
+- 回归: 无回归，所有既有测试保持通过
+- 用法: 此测试验证 Task 16 (turnover unstack 去重) 的数值一致性，是后续 E2E 基准测试 (Task 18) 的前置依赖
+
 [2026-04-05 03:00] Task 16 完成 — 去重 calc_turnover 中的 unstack
 - 修改文件: FactorAnalysis/turnover.py
 - 核心变更: 将 for g in range(n_groups) 循环内每次 `in_group.unstack(level=1)` 改为先 `labels.unstack(level=1)` 一次得到 2D 矩阵 (timestamp × symbol)，再对所有组用布尔矩阵比较计算换手率

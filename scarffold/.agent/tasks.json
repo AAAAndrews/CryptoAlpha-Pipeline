@@ -98,7 +98,7 @@
   {
     "id": 17,
     "task": "测试：turnover unstack 去重数值一致性 (tests/test_perf_turnover_dedup.py) — 6 种 mock 场景 × turnover DataFrame diff < 1e-10、不同 n_groups、含 NaN 数据、chunk_size 模式正确",
-    "passes": false,
+    "passes": true,
     "deps": [16]
   },
   {
