@@ -79,6 +79,50 @@ configure_chinese_font()
 
 
 # ============================================================
+# X 轴日期自适应格式化 / Auto date formatting for x-axis
+# ============================================================
+
+def _auto_format_date_axis(ax, dates) -> None:
+    """
+    根据 dates 的时间跨度自动选择合适的日期格式和刻度间隔。
+    Auto-select date format and tick interval based on the time span of dates.
+
+    自适应规则 / Adaptive rules:
+      - ≤ 7 天:  "%m-%d %H:%M"  (小时级刻度)
+      - ≤ 60 天: "%m-%d"        (每 5 天一个刻度)
+      - ≤ 365 天: "%Y-%m-%d"    (每周一个刻度)
+      - > 365 天: "%Y-%m"       (每月一个刻度)
+
+    若 dates 不是 DatetimeIndex 则跳过 / Skip if dates is not a DatetimeIndex.
+    """
+    import matplotlib.dates as mdates
+
+    if not isinstance(dates, pd.DatetimeIndex) or len(dates) < 2:
+        return
+
+    total_days = (dates[-1] - dates[0]).days
+
+    if total_days <= 7:
+        fmt = "%m-%d %H:%M"
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+    elif total_days <= 60:
+        fmt = "%m-%d"
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+    elif total_days <= 365:
+        fmt = "%Y-%m-%d"
+        ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=0))
+    else:
+        fmt = "%Y-%m"
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(fmt))
+    # 旋转标签避免重叠 / rotate labels to avoid overlap
+    fig = ax.get_figure()
+    if fig is not None:
+        fig.autofmt_xdate(rotation=30, ha="right")
+
+
+# ============================================================
 # 图表生成函数 / Chart generation functions
 # ============================================================
 
@@ -186,6 +230,10 @@ def plot_ic_timeseries(
     ax2.set_ylabel("累积 IC", fontsize=10)
     ax2.grid(True, alpha=0.3)
 
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax1, dates)
+    _auto_format_date_axis(ax2, dates)
+
     # 保存图片 / save figure
     if output_path is not None:
         fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
@@ -289,6 +337,9 @@ def plot_group_returns(
     ax.legend(loc="upper left", fontsize=8)
     ax.grid(True, alpha=0.3)
 
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax, dates)
+
     # 保存图片 / save figure
     if output_path is not None:
         fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
@@ -371,6 +422,9 @@ def plot_portfolio_curves(
     ax1.legend(loc="upper left", fontsize=8)
     ax1.grid(True, alpha=0.3)
 
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax1, long_curve.index)
+
     # --- 下子图：含手续费 / Bottom subplot: after cost ---
     hedge_after_cost = evaluator.hedge_curve_after_cost
 
@@ -395,6 +449,9 @@ def plot_portfolio_curves(
     ax2.set_ylabel("累计净值 / Cumulative NAV", fontsize=10)
     ax2.legend(loc="upper left", fontsize=8)
     ax2.grid(True, alpha=0.3)
+
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax2, long_curve.index)
 
     # 保存图片 / save figure
     if output_path is not None:
@@ -475,6 +532,9 @@ def plot_turnover(
     ax1.legend(loc="upper right", fontsize=8)
     ax1.grid(True, alpha=0.3)
 
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax1, dates)
+
     # --- 下子图：排名自相关线图 / Bottom subplot: rank autocorrelation line ---
     rank_autocorr = evaluator.rank_autocorr
     if rank_autocorr is not None and len(rank_autocorr.dropna()) > 0:
@@ -495,6 +555,9 @@ def plot_turnover(
     ax2.set_ylabel("自相关系数 / Autocorrelation", fontsize=10)
     ax2.legend(loc="upper right", fontsize=8)
     ax2.grid(True, alpha=0.3)
+
+    # 自适应日期格式 / auto date formatting
+    _auto_format_date_axis(ax2, dates)
 
     # 保存图片 / save figure
     if output_path is not None:
