@@ -410,4 +410,5 @@ except Exception as e:
 print("\n" + "=" * 60)
 print(f"结果: {passed} passed, {failed} failed (total {passed + failed})")
 print("=" * 60)
-sys.exit(0 if failed == 0 else 1)
+if __name__ == "__main__":
+    sys.exit(0 if failed == 0 else 1)

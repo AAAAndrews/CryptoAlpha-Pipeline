@@ -56,6 +56,7 @@ class TestAllExport:
         "quantile_group",
         # 净值曲线 / Portfolio curves
         "calc_long_only_curve", "calc_short_only_curve", "calc_top_bottom_curve",
+        "calc_portfolio_curves",
         # 交易成本 / Transaction costs
         "deduct_cost",
         # 收益矩阵 / Return matrix

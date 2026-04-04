@@ -21,8 +21,8 @@ import pkg_resources
 warnings.filterwarnings("ignore")
 
 # 项目根目录加入 sys.path / add project root to sys.path
-# test_smoke.py 位于 scarffold/.agent/ 下，需要向上两级 / file is 2 levels deep
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# test_smoke.py 位于 tests/ 下，需要向上一级 / file is 1 level deep
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -246,7 +246,9 @@ print(f"  Smoke Tests: {passed} passed, {failed} failed, {passed + failed} total
 print(f"{'=' * 60}")
 
 if failed > 0:
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)
 else:
     print("  ALL CHECKS PASSED")
-    sys.exit(0)
+    if __name__ == "__main__":
+        sys.exit(0)

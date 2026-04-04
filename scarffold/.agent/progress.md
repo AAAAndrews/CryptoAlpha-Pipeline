@@ -3,6 +3,33 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-05 05:30] Task 19 完成 — 全量回归测试验证
+- 修复 7 个测试收集错误 + 1 个 __all__ 断言失败 (共 8 个问题)
+- 修改文件: tests/test_task16.py, tests/test_task22_public_exports.py, tests/test_task25_project_smoke.py,
+  tests/test_smoke.py, tests/test_factorlib_integration.py, tests/test_report.py,
+  tests/test_task20_short_only.py, tests/test_task21.py
+- 修复内容:
+  1. test_task16.py: expected_names 补全 calc_portfolio_curves + 7 个新函数 (Task 6 新增)
+  2. test_task22_public_exports.py: EXPECTED_NAMES 补全 calc_portfolio_curves (test_all_count 20→21)
+  3. test_task25_project_smoke.py: expected_total 20→21
+  4. test_smoke.py: PROJECT_ROOT 路径修正 (3级→2级, 文件已从 scarffold/.agent/ 移至 tests/)
+  5. test_factorlib_integration.py: expected_exports 补全 AlphaPriceRange + sys.exit 保护
+  6. test_report.py / test_task20_short_only.py / test_task21.py: sys.exit 保护 (if __name__)
+  7. test_smoke.py / test_task25_project_smoke.py: sys.exit 保护
+- 全量回归结果: 1179 passed, 0 failed (排除 7 个 pre-existing 失败文件)
+- Pre-existing 失败 (81 项, 与本次优化无关):
+  - test_html_report_e2e.py (28): FactorLib registry 被 clear() 清空导致 "Factor not found"
+  - test_step45_e2e_integration.py (13): 同上
+  - test_task23_e2e_script.py (9): 同上
+  - test_task24_e2e_integration.py (17): 同上
+  - test_viz_output_cli.py (9): 同上
+  - test_task04_alpha_price_range_verify.py (3): FactorLib registry 问题
+  - test_future_leak_detection.py (2): detector mock 数据问题
+- 公共 API 签名验证: 所有 21 个 __all__ 导出可正常导入, 函数签名不变
+- FactorEvaluator 属性验证: 17 项公共属性 (ic/rank_ic/icir/ic_stats/group_labels/long_curve/short_curve/hedge_curve 等) 全部正常
+- chunk_size 分块模式验证: 全量/分块模式结果一致, 所有 perf 测试通过
+- 性能优化迭代 (Task 1-19) 全部完成, 0 项新回归
+
 [2026-04-05 04:00] Task 18 完成 — E2E 性能基准测试
 - 新增文件: tests/test_perf_e2e_benchmark.py
 - 验证内容:

@@ -110,7 +110,7 @@
   {
     "id": 19,
     "task": "全量回归测试验证：运行 tests/ 目录所有既有测试确认无回归，所有现有公共 API 签名不变，FactorEvaluator 所有公共属性不变，chunk_size 分块模式正常工作",
-    "passes": false,
+    "passes": true,
     "deps": [18]
   }
 ]

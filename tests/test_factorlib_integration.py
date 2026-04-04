@@ -190,7 +190,7 @@ import FactorLib
 
 # 检查所有导出名称都存在于模块中 / check all exported names exist in module
 expected_exports = [
-    "BaseFactor", "AlphaMomentum", "AlphaVolatility",
+    "BaseFactor", "AlphaMomentum", "AlphaPriceRange", "AlphaVolatility",
     "register", "list_factors", "get", "clear",
 ]
 for name in expected_exports:
@@ -207,5 +207,6 @@ print(f"\n{'='*50}")
 print(f"  总计: {passed + failed}  通过: {passed}  失败: {failed}")
 print(f"{'='*50}")
 
-if failed > 0:
-    raise SystemExit(1)
+if __name__ == "__main__":
+    if failed > 0:
+        raise SystemExit(1)

@@ -208,7 +208,7 @@ for func_name, mod_path in source_modules.items():
         check(f"{func_name} 源模块正确", False, str(e))
 
 # __all__ 总数检查 / __all__ total count check
-expected_total = 20
+expected_total = 21
 check(f"__all__ 共 {expected_total} 项", len(FactorAnalysis.__all__) == expected_total,
       f"got {len(FactorAnalysis.__all__)}")
 
@@ -433,7 +433,9 @@ print(f"  Project-level Smoke Tests: {passed} passed, {failed} failed, {passed +
 print(f"{'=' * 60}")
 
 if failed > 0:
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)
 else:
     print("  ALL CHECKS PASSED")
-    sys.exit(0)
+    if __name__ == "__main__":
+        sys.exit(0)

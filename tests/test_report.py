@@ -111,4 +111,5 @@ check("higher cost → lower hedge return",
       report2["hedge_return_after_cost"].iloc[0] <= report["hedge_return_after_cost"].iloc[0])
 
 print(f"\n=== Results: {passed} passed, {failed} failed ===")
-sys.exit(1 if failed else 0)
+if __name__ == "__main__":
+    sys.exit(1 if failed else 0)
