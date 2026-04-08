@@ -8,7 +8,7 @@
   {
     "id": 2,
     "task": "P0 - run_all() 一次性计算 chunk 并分发：在 run_all() 入口处一次性对 factor/returns/group_labels 执行 split_into_chunks，将 chunk 列表传递给各 run_* 方法，消除重复 isin 过滤",
-    "passes": false,
+    "passes": true,
     "deps": [1]
   },
   {

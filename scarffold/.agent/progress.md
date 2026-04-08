@@ -3,6 +3,15 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 2] P0 run_all() 一次性分块分发 — 消除重复 isin 过滤
+- 修改文件: FactorAnalysis/evaluator.py (run_all() 方法重构)
+- split_into_chunks 调用从 ~10 次降至 3 次 (factor + returns + group_labels)
+- chunk_factor/chunk_returns 在入口处一次性计算，分发到 run_metrics/run_grouping/run_curves/run_turnover/run_neutralize
+- chunk_groups 在 run_grouping() 后一次性计算，分发到 run_curves/run_turnover/run_neutralize
+- 全量模式 (chunk_size=None) 行为完全不变
+- 回归测试: 72 个测试全部通过 (chunk/integration/memory/smoke)
+- 验证: mock patch 确认 split_into_chunks 恰好调用 3 次
+
 [2026-04-09 Task 1] P0 chunk 列表参数 — evaluator 各 run_* 方法增加可选 chunk_factor/chunk_returns/chunk_groups 参数
 - 修改文件: FactorAnalysis/evaluator.py (5 个方法签名变更)
 - 新增测试: tests/test_p0_chunk_passthrough.py (26/26 通过)

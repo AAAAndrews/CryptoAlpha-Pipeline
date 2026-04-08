@@ -556,14 +556,49 @@ class FactorEvaluator:
         Executes all sub-analysis steps in order:
         metrics → grouping → curves → turnover → neutralize
 
+        P0 优化：当 chunk_size 已设置时，在入口处一次性 split factor/returns/group_labels，
+        将 chunk 列表分发到各 run_* 方法，消除重复 isin 过滤。
+        When chunk_size is set, split factor/returns/group_labels once at entry,
+        dispatch chunk lists to each run_* method, eliminating redundant isin filtering.
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
-        return (self.run_metrics()
-                    .run_grouping()
-                    .run_curves()
-                    .run_turnover()
-                    .run_neutralize())
+        if self.chunk_size is None:
+            # 全量模式：无分块开销 / full mode: no chunking overhead
+            return (self.run_metrics()
+                        .run_grouping()
+                        .run_curves()
+                        .run_turnover()
+                        .run_neutralize())
+
+        # P0: 一次性分块 factor / returns，分发到各 run_* 方法
+        # P0: one-time split factor/returns, dispatch to run_* methods
+        chunk_factor = split_into_chunks(self.factor, self.chunk_size)
+        chunk_returns = split_into_chunks(self.returns, self.chunk_size)
+
+        self.run_metrics(chunk_factor=chunk_factor, chunk_returns=chunk_returns)
+        self.run_grouping(chunk_factor=chunk_factor)
+
+        # group_labels 在 run_grouping 后可用，一次性分块 / split group labels once after grouping
+        chunk_groups = split_into_chunks(self.group_labels, self.chunk_size)
+
+        self.run_curves(
+            chunk_factor=chunk_factor,
+            chunk_returns=chunk_returns,
+            chunk_groups=chunk_groups,
+        )
+        self.run_turnover(
+            chunk_factor=chunk_factor,
+            chunk_groups=chunk_groups,
+        )
+        self.run_neutralize(
+            chunk_factor=chunk_factor,
+            chunk_returns=chunk_returns,
+            chunk_groups=chunk_groups,
+        )
+
+        return self
 
     def run(self) -> "FactorEvaluator":
         """
