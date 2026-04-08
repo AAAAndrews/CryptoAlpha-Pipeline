@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 3] P0 chunk 一致性 + 向后兼容测试 — 608/608 checks passed
+- 新增测试: tests/test_p0_chunk_cache.py (608/608 通过)
+- 6 种 mock 场景: 标准场景、大数据量、小数据量、高NaN比例、弱信号+多分组、紧凑分块
+- 验证内容:
+  - run_all() 全量 vs 分块所有报告字段 diff < 1e-10 (6 场景 × 全部属性)
+  - chunk_list=None 向后兼容 (不传 chunk 参数 = 内部 split)
+  - chunk_size=None 全量模式正常 (所有属性非空、报告正常)
+  - 分块模式正确性 (chunk 数量、无重叠、时间连续、symbol 集合一致)
+  - 一次性分块 (P0 run_all) vs 子方法独立分块结果完全一致
+  - 全量模式忽略伪造 chunk 参数
+- group_labels NaN 处理: NaN 因子值产生 NaN 标签，比较时需分别验证 NaN 位置和非空值一致性
+- 回归测试: Task 1 passthrough (26/26)、integration (153 checks) 均通过
+- 用法: python tests/test_p0_chunk_cache.py
+
 [2026-04-09 Task 2] P0 run_all() 一次性分块分发 — 消除重复 isin 过滤
 - 修改文件: FactorAnalysis/evaluator.py (run_all() 方法重构)
 - split_into_chunks 调用从 ~10 次降至 3 次 (factor + returns + group_labels)

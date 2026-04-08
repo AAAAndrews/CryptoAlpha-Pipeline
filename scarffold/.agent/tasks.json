@@ -14,7 +14,7 @@
   {
     "id": 3,
     "task": "测试 - P0 chunk 一致性 + 向后兼容 (tests/test_p0_chunk_cache.py)：验证 chunk_list 传入 vs 内部 split 结果完全一致、chunk_list=None 时行为不变、chunk_size=None 时正常、6 种 mock 场景 × 全部报告字段 diff < 1e-10、分块模式正确",
-    "passes": false,
+    "passes": true,
     "deps": [2]
   },
   {
