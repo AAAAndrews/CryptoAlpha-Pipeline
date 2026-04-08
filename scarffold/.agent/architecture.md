@@ -45,7 +45,7 @@ CryptoAlpha-Pipeline/
 │   ├── update_bulk.py               # 历史批量下载 (S3)
 │   ├── cleanup_fake_data.py         # 清理下架交易对假数据
 │   ├── pipeline.py                  # 统一管道: bulk + cleanup
-│   ├── run_factor_research.py       # [新增] 端到端投研编排脚本
+│   ├── run_factor_research.py       # [增强] 端到端投研编排脚本 (--mode quick/full)
 │   └── check_future_leak.py         # [新增] 未来函数检测脚本
 │
 ├── Cross_Section_Factor/            # 因子挖掘
@@ -86,7 +86,7 @@ CryptoAlpha-Pipeline/
 │   ├── data_quality.py              # [新增] 数据质量追踪 (max_loss 机制)
 │   ├── neutralize.py                # [新增] 分组中性化权重构建
 │   ├── chunking.py                  # [新增] 分块处理核心逻辑 (时间分块/结果汇总)
-│   ├── evaluator.py                 # [重构] FactorEvaluator → Tear Sheet 分层编排
+│   ├── evaluator.py                 # [增强] FactorEvaluator → Tear Sheet 分层 + run_quick() 快速筛选
 │   ├── report.py                    # 绩效报告汇总输出
 │   └── visualization/               # [新增] 可视化子包
 │       ├── __init__.py              # 公共导出
@@ -192,6 +192,29 @@ CryptoAlpha-Pipeline/
 4. --viz-output 路径配置 + 自动创建目录
 ```
 
+### Quick Screen / Full Analysis 两级管道 (Two-Tier Pipeline) — [新增]
+```
+Quick Screen (快速筛选):
+  目标: 秒级完成单因子筛选, 适用于因子挖掘 (GP) / 批量巡检
+  计算: Layer 0 only (IC/RankIC/ICIR/IC Stats/Rank Autocorrelation)
+  耗时: ~8s (评估环节), 全流程 ~62s
+  调用: ev.run_quick().generate_report(select=["metrics", "rank_autocorr"])
+  CLI:  python scripts/run_factor_research.py --factor X --mode quick
+
+Full Analysis (全量分析):
+  目标: 完整绩效检验, 生成 Tear Sheet
+  计算: Layer 0 + 1 + 2 + 3 (全部指标)
+  耗时: ~250s (评估环节优化后), 全流程 ~305s
+  调用: ev.run_all().generate_report()
+  CLI:  python scripts/run_factor_research.py --factor X --mode full
+
+指标层级依赖:
+  Layer 0 (纯向量化): IC, RankIC, ICIR, IC Stats, Rank Autocorrelation
+  Layer 1 (依赖 quantile_group): Quantile Group Labels, Turnover
+  Layer 2 (依赖 portfolio): Portfolio Curves, Sharpe/Calmar/Sortino, Cost-Adjusted
+  Layer 3 (依赖 demean+portfolio): Neutralized Curve
+```
+
 ## Key Design Decisions
 - FactorLib 与 deap_alpha 解耦: FactorLib 面向手动定义因子, deap_alpha 面向遗传编程自动挖掘
 - FactorAnalysis 独立于 DEAP: 使用 pandas DataFrame 作为主要数据格式, 兼容 FactorLib 输出
@@ -205,3 +228,72 @@ CryptoAlpha-Pipeline/
 - **分块处理 (Chunking)**: FactorEvaluator 新增 chunk_size 参数, 按时间戳分块处理以控制内存峰值, 块间保持持仓连续性, chunk_size=None 时向后兼容
 - **未来函数检测**: 自动化脚本检查 factor/forward_return 时间对齐、shift(-1) 使用位置, 输出 PASS/FAIL 报告
 - **可视化模块**: 独立子包 FactorAnalysis/visualization/, 支持 IC 时间序列/分组收益/净值曲线/换手率图表 + 综合绩效表格 + Jinja2 HTML 报告组装
+- **quantile_group 缓存复用**: FactorEvaluator 内缓存一次分组结果, 下游函数接受预计算 group_labels, 消除 run_all() 中 6-7 次冗余排序
+- **portfolio 三函数合并**: calc_long_only/short_only/top_bottom_curve 合并为 calc_portfolio_curves, 单次 groupby.apply 同时输出三条日收益序列, 原函数保留为薄包装
+- **IC/RankIC 向量化**: unstack 为 2D 矩阵后使用 numpy 行级 Pearson/Spearman 批量计算, 避免 groupby.apply 逐截面 Python 函数调用
+- **rank_autocorr 向量化**: unstack 为 2D 矩阵后 numpy 批量计算相邻行相关性, 消除逐截面 xs+corr 纯 Python 循环
+- **turnover unstack 去重**: unstack 一次后向量化计算所有组换手率, 替代循环内重复 unstack
+- **neutralize 复用 portfolio**: 中性化对冲收益复用 calc_portfolio_curves, 减少 groupby.apply 冗余调用
+- **数值一致性保障**: 所有优化通过 mock 数据逐元素对比 (diff < 1e-8) + 小批量真实数据端到端回归验证
+- **split_into_chunks 一次性计算 (P0)**: run_all() 入口处一次性 split factor/returns/group_labels, chunk 列表以参数传入各 run_* 方法, 消除 ~1650 次冗余 isin 过滤, chunk_list=None 时向后兼容
+- **portfolio numpy 向量化 (P1)**: _portfolio_curves_core 使用 unstack + numpy boolean mask 替代 groupby.apply, 单次 numpy 批量计算 long/short/hedge 日收益, 预期 7× 加速
+- **quantile_group numpy 向量化 (P2)**: quantile_group 使用 unstack + numpy percentile + searchsorted 替代 groupby.apply, 含 zero_aware 模式支持, 预期 5.5× 加速
+- **neutralize 内部操作合并 (P3)**: demean + re-rank 在单次 unstack 矩阵上完成, 避免两次独立 groupby 操作, 复用 P1 向量化 portfolio
+- **两级管道 (Quick Screen / Full Analysis)**: run_quick() 仅计算 Layer 0 指标 (全部向量化), 零 groupby.apply 调用, 适用于因子筛选; run_all() 计算全部层级, 适用于深度分析
+
+## Performance Optimization Flow (性能优化流程)
+
+```
+run_all() v2 优化执行路径:
+0. split_into_chunks 一次性计算 → chunk 列表缓存, 传入各 run_* 方法 (P0)
+1. run_metrics()         — 向量化 IC/RankIC (numpy 2D 矩阵批量计算)
+2. run_grouping()        — quantile_group numpy 向量化 (P2), 结果缓存
+3. run_curves()          — numpy 向量化 portfolio (P1) + 缓存 group_labels
+4. run_turnover()        — 使用缓存 group_labels + unstack 一次向量化计算
+5. run_neutralize()      — demean + re-rank 合并 (P3) + 复用 P1 向量化 portfolio
+
+run_quick() 快速筛选路径:
+1. run_metrics()         — 向量化 IC/RankIC/ICIR/IC Stats
+2. run_rank_autocorr()   — 向量化 rank autocorrelation
+→ 零 groupby.apply, 纯 numpy 计算
+```
+
+### 优化前后对比
+| 指标 | 优化前 (v1) | v1 迭代后 | v2 迭代后 (目标) |
+|------|-------------|-----------|-----------------|
+| split_into_chunks | ~1650 次 isin | ~1650 次 isin | 1 次 (P0) |
+| quantile_group 调用次数 | 6-7 次 | 1 次 | 0 次 (numpy 向量化, P2) |
+| groupby.apply (portfolio) | 3 次 | 1 次 | 0 次 (numpy 向量化, P1) |
+| neutralize groupby | 3 次独立操作 | 复用 portfolio | 合并为单次 unstack (P3) |
+| 评估环节耗时 | ~990s | ~858s | ~250s |
+| 全流程耗时 | ~1044s (17.4min) | ~912s | ~305s (~5min) |
+
+### 向量化计算模式
+```
+IC/RankIC 向量化:
+  factor.unstack()  → 2D DataFrame (timestamp × symbol)
+  returns.unstack() → 2D DataFrame (timestamp × symbol)
+  numpy 批量行级 Pearson/Spearman → IC Series
+
+portfolio numpy 向量化 (P1):
+  labels.unstack()  → 2D DataFrame (timestamp × symbol)
+  returns.unstack() → 2D DataFrame (timestamp × symbol)
+  np.where(labels_mat == g, returns_mat, np.nan).mean(axis=1) → 日收益
+
+quantile_group numpy 向量化 (P2):
+  factor.unstack() → 2D DataFrame (timestamp × symbol)
+  numpy 按行计算分位数边界 → np.searchsorted 分组
+
+neutralize 合并 (P3):
+  factor/returns unstack → demean + re-rank 单次矩阵操作
+  复用 P1 向量化 portfolio 计算对冲收益
+
+rank_autocorr 向量化:
+  ranks = factor.groupby(level=0).rank()
+  ranks.unstack() → 2D DataFrame (timestamp × symbol)
+  numpy 相邻行 Pearson 相关 → rank_autocorr Series
+
+turnover 向量化:
+  labels.unstack() → 2D DataFrame (timestamp × symbol)
+  numpy 比较相邻行变化 → turnover DataFrame (所有组)
+```

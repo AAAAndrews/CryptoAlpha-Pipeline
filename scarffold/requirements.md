@@ -1,192 +1,377 @@
-# 跑通第一个投研流程
+# 评估环节性能优化需求 (Evaluation Performance Optimization)
 
-## 1. 通用数据加载器 — 扩展 ShortTermDataLoader 为通用 K 线加载器
+> 基准测试日期: 2026-04-09
+> 测试环境: Windows 11, 15.4 GB RAM, Anaconda Python 3.10
+> 数据规模: 722 symbols × 54,759 timestamps × 13,065,981 rows (全量永续合约, 1h K线, ~6.3年)
 
-- 基于现有 `Cross_Section_Factor/short_term_loader.py` 中的 `ShortTermDataLoader`，扩展为一个通用数据加载器（可重命名或新建类）
-- 支持参数化过滤：`start_time`、`end_time`、`symbols`（交易对列表）、`exchange`、`kline_type`、`interval` 等
-- 全样本加载 = 该通用加载器的宽约束调用（不传时间范围/不传 symbols 过滤）
-- 保持与 `FactorLib` / `FactorAnalysis` 的 MultiIndex `(timestamp, symbol)` 格式兼容
-- 数据验证：格式校验、无缺失值、无重复行、high >= low
+---
 
-## 2. 因子案例编写 — 实现 (open-close)/(high-low) 因子
+## 1. 基准测试结果
 
-- 在 `FactorLib/` 中新增因子文件（如 `alpha_price_range.py`），继承 `BaseFactor`
-- 因子公式：`(open - close) / (high - low)`，衡量当日价格振幅中收盘相对于开盘的偏离程度
-- 需处理边界情况：`high == low` 时（振幅为零）因子值为 NaN 或 0
-- 注册到 `FactorLib` 的 registry 中，与现有 Alpha1/Alpha2 一致
+### 1.1 全流程耗时
 
-## 3. 收益矩阵计算 — 基于全样本数据构建截面收益
+使用 `scripts/run_factor_research.py --factor AlphaMomentum --interval 1h --kline-type swap` 全量回测:
 
-- 使用全样本 K 线数据计算日收益率，产出 `pd.Series` with MultiIndex `(timestamp, symbol)`
-- 这是 FactorAnalysis 所有组件的统一输入（IC/RankIC/分组/净值曲线均需要因子值 + 收益率）
-- 需注意：每个截面（时间点）的收益是 T+1 收益（即当日因子值对应次日收益），这是标准做法
-- 收益率矩阵需要与因子值对齐：相同的时间戳和交易对索引
-- 验证：无全 NaN 截面、截面内至少有一定数量的有效交易对
+| 步骤 | 耗时 | 占比 |
+|------|------|------|
+| Data Loading | 37.5s | 3.6% |
+| Factor Calc | 2.6s | 0.2% |
+| Returns Calc | 3.3s | 0.3% |
+| Alignment | 11.0s | 1.1% |
+| **Evaluation (run_all)** | **990.0s** | **94.8%** |
+| **总计** | **1044.3s (17.4min)** | 100% |
 
-## 4. 因子计算与对齐 — 计算因子值并与收益矩阵配对
+> 全量模式 OOM, 使用 chunk_size=200 完成。评估环节占绝对瓶颈。
 
-- 使用通用加载器加载全样本数据
-- 调用 `FactorLib` 中的因子计算因子值
-- **收益率计算支持多种标签**：
-  - `close2close`：`close.shift(-1) / close - 1`（经典日收益率）
-  - `open2open`：`open.shift(-1) / open - 1`（开盘到次日开盘）
-- 因子值与收益矩阵按 `(timestamp, symbol)` 索引对齐
-- 关键对齐逻辑：因子值在 T 时刻计算，收益使用 T+1 的前向收益，确保**不存在未来函数**
-- 对齐后剔除任一侧为 NaN 的行，产出干净的 `(factor_value, forward_return)` 配对数据
+### 1.2 评估环节细粒度计时 (chunk_size=500)
 
-## 5. IC/RankIC/ICIR 分析 — 因子预测能力检验（跑通验证）
+使用 `scripts/bench_eval_profiling.py` 对 run_all() 内部每个函数逐一计时:
 
-- 使用 `FactorAnalysis.calc_ic`、`calc_rank_ic`、`calc_icir` 对每个因子进行 IC 系列分析
-- 对两种收益率标签（close2close、open2open）分别计算
-- **目的为验证功能可正常跑通**：确认 IC 系列能正确产出 Series、ICIR 能产出 float，数值不作为判断因子好坏的标准
-- 简要检查 IC 均值在合理范围内（|IC| < 0.5），仅作为未来函数的基本筛查，不做因子有效性判断
+#### 五大步骤耗时
 
-## 6. 分组收益分析 — 分位数分组 + 分组平均收益
+| 步骤 | 耗时 | 占比 |
+|------|------|------|
+| run_neutralize | 172.4s | 20.1% |
+| split_into_chunks (重复调用开销) | 174.5s | 20.3% |
+| run_curves | 109.9s | 12.8% |
+| run_grouping | 55.9s | 6.5% |
+| run_metrics | 43.3s | 5.0% |
+| run_turnover | 35.8s | 4.2% |
+| 其他 (merge/ratios/cost 等) | 266.8s | 31.1% |
 
-- 使用 `FactorAnalysis.quantile_group` 对因子值进行横截面分位数分组（如 5 组）
-- 计算每组的平均收益（分别 close2close / open2open），验证分组收益的单调性
-- **目的为验证功能跑通**：确认分组标签正确产出、分组收益计算无误
-- 输出：各组平均收益表，可观察因子是否具有排序能力
+#### 内部操作瓶颈排名
 
-## 7. 净值曲线回测 — 纯多/纯空/多空对冲
+| 排名 | 操作 | 耗时 | 占比 | 调用位置 |
+|------|------|------|------|---------|
+| **1** | **`groupby.apply` (portfolio)** | **136.6s** | **32.7%** | run_curves + run_neutralize |
+| **2** | **`groupby.apply` (quantile_group)** | **83.0s** | **19.9%** | run_grouping + run_neutralize |
+| **3** | **`split_into_chunks` (重复调用)** | **174.5s** | **20.3%** | 每个 step 重复调用 |
+| 4 | `groupby.transform` (demean) | 17.0s | 4.1% | run_neutralize |
+| 5 | `unstack` (all) | 16.5s | 3.9% | calc_ic / calc_rank_ic / turnover / autocorr |
+| 6 | `groupby.rank` (autocorr) | 2.3s | 0.5% | run_turnover |
+| 7 | `rank(axis=1)` (RankIC) | 1.5s | 0.4% | calc_rank_ic |
+| 8 | `numpy Pearson` (all) | 2.1s | 0.5% | calc_ic / calc_rank_ic / autocorr |
 
-- 使用 `FactorAnalysis.calc_long_only_curve`、`calc_short_only_curve`、`calc_top_bottom_curve` 分别构建净值曲线
-- 分别对两种收益率标签（close2close、open2open）回测
-- **目的为验证功能跑通**：确认三条净值曲线能正确产出、起始值为 1.0、无 NaN
-- 不对曲线的盈利能力做判断
+---
 
-## 8. 交易成本扣除 — 滑点成本模拟
+## 2. 根因分析
 
-- 使用 `FactorAnalysis.deduct_cost`（Task 22 待实现）对净值曲线进行交易成本扣除
-- **目的为验证功能跑通**：确认扣费后净值低于扣费前、无异常值
-- 成本参数使用合理的默认值（如 0.1% 滑点）
+### 2.1 瓶颈 #1: `split_into_chunks` 重复调用 (20.3%, 174.5s)
 
-## 9. 绩效指标计算 — Sharpe/Calmar/Sortino 比率
+**问题**: `run_metrics`, `run_grouping`, `run_curves`, `run_turnover`, `run_neutralize` 五个步骤各自独立调用 `split_into_chunks`，每次都对 factor/returns/group_labels 做一次 `isin()` 布尔索引过滤。
 
-- 使用 `FactorAnalysis` 中的 Sharpe、Calmar、Sortino 比率计算（Task 23 待实现）对净值曲线评估
-- 分别对扣费前/扣费后的净值曲线计算绩效指标
-- **目的为验证功能跑通**：确认三个比率能正确产出数值、年化处理正确
-- 不对指标高低做判断
+- 每个 step 调用 1~3 次 split_into_chunks
+- 每次 split 遍历全部 1300 万行做 `index.get_level_values(0).isin(chunk_ts)`
+- 总计约 1650 次 isin 过滤，完全冗余
 
-## 10. 端到端流程编排 — 一键运行完整投研流程
+**代码位置**: `FactorAnalysis/evaluator.py` 各 run_* 方法内的 `split_into_chunks(self.factor, self.chunk_size)` 调用。
 
-- 创建一个端到端运行脚本（如 `scripts/run_factor_research.py`），串联上述所有步骤：
-  1. 数据加载（通用加载器）
-  2. 收益率计算（支持 close2close / open2open 标签）
-  3. 因子计算（FactorLib 中所有已注册因子）
-  4. 因子与收益对齐
-  5. IC/RankIC/ICIR 分析
-  6. 分组收益分析
-  7. 净值曲线构建
-  8. 交易成本扣除
-  9. 绩效指标计算
-  10. 结果汇总输出（print 或 DataFrame）
-- 脚本支持 CLI 参数：指定因子、收益率标签、分组数、成本参数等
-- 运行完毕后输出结构化结果，确认全流程跑通无报错
+### 2.2 瓶颈 #2: `groupby.apply` (portfolio) (32.7%, 136.6s)
+
+**问题**: `_portfolio_curves_core()` 中 `df.groupby(level=0).apply(_portfolio_returns)` 对每个时间截面 (54,759 个) 调用一次纯 Python 函数，每次内部做:
+1. `g["returns"].notna() & np.isfinite(g["returns"])` — 构建布尔 mask
+2. `g["label"].isin(top_labels)` — 构建 long/short mask
+3. `.mean()` — 计算均值
+
+虽然单个截面数据量不大 (~722 symbols)，但 Python 函数调用开销 × 54,759 次累积极大。run_curves 调一次 (67.3s)，run_neutralize 内的 calc_portfolio_curves 再调一次 (69.3s)。
+
+**代码位置**: `FactorAnalysis/portfolio.py:206` — `daily = df.groupby(level=0).apply(_portfolio_returns)`
+
+### 2.3 瓶颈 #3: `groupby.apply` (quantile_group) (19.9%, 83.0s)
+
+**问题**: `quantile_group()` 中 `factor_valid.groupby(level=0, group_keys=False).apply(_assign_group)` 对每个截面调用一次 `_assign_group`，内部执行 `pd.qcut()`。
+
+- run_grouping 调一次 (41.1s)
+- run_neutralize 内对中性化因子再调一次 (41.9s)
+- 总计 110 chunks × 2 × ~500 截面 = ~110,000 次 Python 函数调用
+
+**代码位置**: `FactorAnalysis/grouping.py:106` — `group_result = factor_valid.groupby(level=0, group_keys=False).apply(_fn)`
+
+---
+
+## 3. 优化方案
+
+### P0: split_into_chunks 一次性计算 (预期 -170s, ↓20%)
+
+**方案**: 在 `run_all()` 入口处一次性对 factor/returns/group_labels 执行 `split_into_chunks`，将 chunk 列表以参数形式传入各 run_* 方法，消除重复的 isin 过滤。
+
+**修改范围**:
+- `evaluator.py`: `run_all()` 增加 chunk 列表缓存逻辑
+- `evaluator.py`: 各 `run_*` 方法签名增加可选 `chunk_list` 参数
+- 各方法内部检查 `chunk_list` 是否已提供，有则跳过 split
+
+**向后兼容**: `chunk_list=None` 时行为不变 (仍内部 split)。
+
+### P1: portfolio groupby.apply → 向量化 (预期 -100s, ↓12%)
+
+**方案**: 将 `_portfolio_curves_core()` 中的 `groupby.apply(_portfolio_returns)` 替换为向量化操作:
+1. `labels.unstack()` → 2D 矩阵 (timestamp × symbol)
+2. `returns.unstack()` → 2D 矩阵
+3. 用 numpy boolean mask 按组取均值: `np.where(labels_mat == g, returns_mat, np.nan).mean(axis=1)`
+4. 避免 Python 函数调用，单次 numpy 批量计算
+
+**修改范围**:
+- `FactorAnalysis/portfolio.py`: 重写 `_portfolio_curves_core()`
+- 保持公共 API (calc_portfolio_curves / calc_long_only_curve / calc_short_only_curve / calc_top_bottom_curve) 签名不变
+
+**风险**: 需验证 NaN 处理、数值一致性 (diff < 1e-8)、_raw 模式兼容。
+
+### P2: quantile_group groupby.apply → 向量化 (预期 -60s, ↓7%)
+
+**方案**: 将 `quantile_group()` 中的 `groupby.apply(_assign_group)` 替换为:
+1. `factor.unstack()` → 2D 矩阵 (timestamp × symbol)
+2. `numpy.percentile` 或 `scipy.stats.rankdata` 按行计算分位数
+3. 用 `pd.cut` 或直接 `np.searchsorted` 分组
+
+**修改范围**:
+- `FactorAnalysis/grouping.py`: 重写 `quantile_group()` 核心逻辑
+- 保持公共 API 签名不变，包括 zero_aware 模式
+
+**风险**: `pd.qcut` 的 `duplicates='drop'` 行为需用 numpy 等价实现，处理重复值边界情况。
+
+### P3: neutralize 内部操作合并 (预期 -40s, ↓5%)
+
+**方案**: run_neutralize 内部当前执行: demean → quantile_group → calc_portfolio_curves，其中 demean 和 quantile_group 各自独立做一次 groupby 操作。可合并为:
+1. demean + re-rank 在单次 unstack 矩阵上完成 (避免两次 groupby)
+2. portfolio curves 复用 P1 的向量化实现
+
+**修改范围**:
+- `FactorAnalysis/neutralize.py`: 重写 `calc_neutralized_curve()` 内部流程
+
+---
+
+## 4. 预期效果
+
+| 阶段 | 当前耗时 | 优化后预期 | 加速比 |
+|------|---------|-----------|--------|
+| split_into_chunks | 174.5s | ~5s | 35× |
+| groupby.apply (portfolio) | 136.6s | ~20s | 7× |
+| groupby.apply (quantile_group) | 83.0s | ~15s | 5.5× |
+| groupby.transform (demean) | 17.0s | ~5s | 3.4× |
+| 其他 (已向量化) | 447.9s | ~447.9s | 1× |
+| **评估总计** | **858.5s** | **~493s** | **1.7×** |
+| **全流程总计** | **~1044s** | **~530s** | **2.0×** |
+
+> 注: 全流程耗时从 ~17min 降至 ~9min。若后续增大 chunk_size (内存允许时) 可进一步缩短。
+
+---
+
+## 5. 硬约束
+
+- 所有优化数值差异 < 1e-8
+- 既有测试不回归 (1179 passed)
+- 公共 API 签名不变
+- chunk_size 分块模式正常工作
+- _raw 模式兼容
+- zero_aware 分组模式兼容
+
+---
+
+## 6. 执行顺序建议
+
+```
+P0 (split_into_chunks) → P1 (portfolio 向量化) → P2 (quantile_group 向量化) → P3 (neutralize 合并)
+```
+
+每个优化独立可交付，P0 无需修改核心计算逻辑，风险最低，应最先实施。
+
+---
+
+## 7. 快速回测 vs 全量回测分级方案
+
+### 7.1 设计思路
+
+因子投研存在天然的两阶段工作流:
+
+```
+Stage 1: 因子筛选 (Factor Screening)
+  └─ 从数百个候选因子中快速淘汰无效因子
+  └─ 关键问题: "这个因子有没有预测能力?" "是否统计显著?" "信号衰减快吗?"
+  └─ 需要跑 100~1000 次, 对单次耗敏感
+
+Stage 2: 因子深度分析 (Factor Deep Dive)
+  └─ 对 10~20 个通过筛选的因子做完整绩效检验
+  └─ 关键问题: "PnL 曲线如何?" "换手成本多高?" "是否存在风格偏差?"
+  └─ 只跑少量因子, 可接受较长耗时
+```
+
+当前 run_all() 把所有指标打包在一起, 无法区分这两个阶段。需要拆分为两条管道。
+
+### 7.2 指标依赖链分析
+
+每个指标的计算依赖关系决定了它属于哪条管道:
+
+```
+Layer 0 (纯向量化, 无 groupby.apply):
+  ├─ IC (Pearson)               ─ unstack + numpy Pearson
+  ├─ Rank IC (Spearman)         ─ unstack + rank(axis=1) + numpy Pearson
+  ├─ ICIR                       ─ IC 序列的 mean/std, 零成本
+  ├─ IC Stats (t-stat/p-value)  ─ IC 序列的 scipy 统计, 零成本
+  └─ Rank Autocorrelation       ─ groupby.rank + unstack + numpy Pearson
+
+Layer 1 (依赖 quantile_group, 有 1 次 groupby.apply):
+  ├─ Quantile Group Labels      ─ groupby.apply(qcut)
+  └─ Turnover                   ─ labels.unstack + boolean ops (向量化)
+
+Layer 2 (依赖 group labels + portfolio groupby.apply):
+  ├─ Portfolio Curves           ─ groupby.apply (long/short/hedge)
+  ├─ Sharpe / Calmar / Sortino  ─ 曲线衍生指标, 零成本
+  └─ Cost-Adjusted Returns      ─ deduct_cost, 零成本
+
+Layer 3 (依赖 demean + re-ranking + portfolio):
+  └─ Neutralized Curve          ─ demean + quantile_group + portfolio
+```
+
+**Layer 0 是天然的快速回测候选** — 全部向量化, 不依赖 quantile_group, 不依赖 portfolio 计算。
+
+### 7.3 指标价值/成本排序
+
+按 "对因子筛选的决策价值" 排序, 标注计算成本:
+
+| 排名 | 指标 | 决策价值 | 计算成本 | 依赖 | 管道 |
+|------|------|---------|---------|------|------|
+| 1 | **ICIR** | ★★★★★ 判断因子质量的单一最佳指标 | ~0s (IC 衍生) | IC | Quick |
+| 2 | **Rank IC Mean** | ★★★★★ 比 IC 更鲁棒, 捕捉非线性关系 | ~2s | — | Quick |
+| 3 | **IC Mean** | ★★★★ 因子预测方向和强度 | ~2s | — | Quick |
+| 4 | **IC t-stat / p-value** | ★★★★ 预测能力的统计显著性 | ~0s (IC 衍生) | IC | Quick |
+| 5 | **Rank Autocorrelation** | ★★★ 信号衰减速度, 决定调仓频率 | ~5s | — | Quick |
+| 6 | **IC Skew / Kurtosis** | ★★★ IC 分布形态, 尾部风险信号 | ~0s (IC 衍生) | IC | Quick |
+| 7 | **Turnover** | ★★★ 信号稳定性, 实际换手成本 | ~6s | quantile_group | Standard |
+| 8 | **Hedge Return** | ★★★ 多空对冲绝对收益 | ~67s | group + portfolio | Full |
+| 9 | **Sharpe** | ★★★ 风险调整后收益 | ~0s (曲线衍生) | portfolio | Full |
+| 10 | **Cost-Adjusted Hedge** | ★★☆ 扣费后真实收益 | ~0s (曲线衍生) | portfolio + cost | Full |
+| 11 | **Calmar / Sortino** | ★★☆ 回撤/下行风险特征 | ~0s (曲线衍生) | portfolio | Full |
+| 12 | **Neutralized Return** | ★★☆ 去风格偏差后的纯 alpha | ~128s | demean + qg + portfolio | Full |
+| 13 | **Long/Short Return** | ★☆ 分侧收益拆解 | ~0s (曲线衍生) | portfolio | Full |
+
+> 成本数据基于 722 symbols × 54,759 timestamps, chunk_size=500 实测。
+
+### 7.4 两级管道定义
+
+#### Quick Screen (快速回测)
+
+```
+目标: 秒级完成单因子筛选
+受众: 因子挖掘 (GP) / 批量因子巡检
+
+计算内容 (Layer 0 only):
+  [1] IC / Rank IC / ICIR / IC Stats
+  [2] Rank Autocorrelation
+
+输出:
+  - IC_mean, IC_std, RankIC_mean, RankIC_std
+  - ICIR, IC_t_stat, IC_p_value
+  - IC_skew, IC_kurtosis
+  - avg_rank_autocorr
+
+预估耗时 (当前, chunk_size=500):
+  评估环节: ~13s
+  全流程:   ~67s (含数据加载 37.5s + 因子计算 2.6s + 对齐 11s + 评估 13s)
+
+预估耗时 (P0 优化后):
+  评估环节: ~8s
+  全流程:   ~62s
+```
+
+#### Full Analysis (全量回测)
+
+```
+目标: 完整绩效检验, 生成 Tear Sheet
+受众: 因子深度分析 / 投研报告
+
+计算内容 (Layer 0 + 1 + 2 + 3):
+  [1] IC / Rank IC / ICIR / IC Stats           (Layer 0)
+  [2] Rank Autocorrelation                      (Layer 0)
+  [3] Quantile Group Labels                     (Layer 1)
+  [4] Turnover                                  (Layer 1)
+  [5] Portfolio Curves + Cost + Ratios          (Layer 2)
+  [6] Neutralized Curve                         (Layer 3)
+
+输出:
+  - Quick Screen 的全部指标
+  - n_groups_used
+  - long_return, short_return, hedge_return
+  - hedge_return_after_cost
+  - sharpe, calmar, sortino (cost 前/后)
+  - avg_turnover
+  - neutralized_return
+  - n_days
+
+预估耗时 (当前, chunk_size=500):
+  评估环节: ~858s
+  全流程:   ~912s
+
+预估耗时 (P0-P3 全部优化后):
+  评估环节: ~250s
+  全流程:   ~305s (~5min)
+```
+
+#### 对比
+
+| | Quick Screen | Full Analysis |
+|--|-------------|---------------|
+| 指标数 | 8 | 20 |
+| 评估耗时 (当前) | ~13s | ~858s |
+| 评估耗时 (优化后) | ~8s | ~250s |
+| 加速比 vs 当前全量 | **66×** | **3.4×** |
+| groupby.apply 调用 | 0 次 | ~330,000 次 |
+| 适用场景 | 因子筛选 / GP 挖掘 | 深度分析 / 报告 |
+
+### 7.5 实现方案
+
+在 `FactorAnalysis/evaluator.py` 中新增 `run_quick()` 方法:
+
+```python
+class FactorEvaluator:
+    # 现有
+    def run_all(self): ...       # 全量分析 (Layer 0-3)
+    def run(self): ...           # 向后兼容 = run_all()
+
+    # 新增
+    def run_quick(self): ...     # 快速筛选 (Layer 0 only)
+        """仅计算 IC/RankIC/ICIR/IC Stats/Rank Autocorrelation"""
+        self.run_metrics()       # IC/RankIC/ICIR/IC_stats (向量化)
+        self.run_rank_autocorr() # rank autocorrelation (向量化)
+        return self
+```
+
+对应 `run_factor_research.py` 增加 `--mode` 参数:
+
+```bash
+# 快速筛选 (默认)
+python scripts/run_factor_research.py --factor AlphaMomentum --mode quick
+
+# 全量分析
+python scripts/run_factor_research.py --factor AlphaMomentum --mode full
+```
+
+`generate_report()` 支持 `select` 参数按需输出:
+
+```python
+# 快速模式只输出 Layer 0 指标
+ev.run_quick().generate_report(select=["metrics", "rank_autocorr"])
+
+# 全量模式输出全部
+ev.run_all().generate_report()
+```
 
 
+### 7.7 执行优先级
 
-# Alphalens 借鉴建议 / Suggestions from alphalens
+快速回测本身不需要任何性能优化即可工作 (Layer 0 已全部向量化), 因此:
 
-> 基于 [quantopian/alphalens](https://github.com/quantopian/alphalens) 源码分析，对 FactorAnalysis 模块的改进建议。
+```
+1. [立即可做] 新增 run_quick() + --mode quick    ← 零风险, 即刻可用
+2. [P0] split_into_chunks 优化                     ← 同时加速两条管道
+3. [P1] portfolio 向量化                           ← 加速 Full 管道
+4. [P2] quantile_group 向量化                      ← 加速 Full 管道, 也使 Turnover 可纳入 Quick
+5. [P3] neutralize 合并                             ← 加速 Full 管道
+6. [可选] P2 完成后, 将 Turnover 纳入 Quick 管道    ← 进一步丰富快速筛选指标
+```
 
-## 1. 增加换手率指标 / Add Turnover Metrics
+---
 
-alphalens 实现了两个关键的换手率指标：
+## 8. 辅助脚本
 
-- `quantile_turnover()`: 衡量每个分组每期有多少"新面孔"进入（0.0 = 完全稳定, 1.0 = 全部替换）
-- `factor_rank_autocorrelation()`: 因子排名的自相关系数，衡量排名稳定性
-
-当前 `FactorAnalysis` 没有任何换手率度量。一个因子 IC 很高但换手率极高时，收益会被交易成本吞噬，这在加密货币市场（高波动、高手续费）尤其关键。alphalens 的经验判断标准：
-
-| 自相关系数 | 含义 |
-|---|---|
-| > 0.95 | 高度稳定，预期交易成本低 |
-| 0.80–0.95 | 中等稳定 |
-| 0.50–0.80 | 不稳定，实现成本高 |
-| < 0.50 | 接近随机，因子可能是噪声主导 |
-
-**建议**: 在 `metrics.py` 中新增 `calc_turnover(factor, n_groups)` 和 `calc_rank_autocorr(factor)`，在 `FactorEvaluator` 编排中默认计算并输出到 report。
-
-## 2. 增加 IC 统计显著性分析 / Add IC Statistical Significance
-
-alphalens 的 IC 信息表报告了远比当前 `FactorAnalysis` 更丰富的 IC 统计量：
-
-| 指标 | 说明 | 当前状态 |
-|---|---|---|
-| IC Mean | 日均 IC | 有（ICIR 间接体现） |
-| IC Std. | IC 波动率 | 有（ICIR 间接体现） |
-| Risk-Adjusted IC | IC Mean / IC Std. | 即 ICIR，已有 |
-| **t-stat(IC)** | 单样本 t 检验，IC 是否显著不为零 | **缺失** |
-| **p-value(IC)** | 统计显著性水平 | **缺失** |
-| **IC Skew** | IC 分布偏度，衡量极端值方向 | **缺失** |
-| **IC Kurtosis** | IC 分布峰度，衡量尾部风险 | **缺失** |
-
-t-stat 和 p-value 能直接判断因子的预测能力是否具有统计显著性（而非随机噪声）。IC Skew 和 Kurtosis 能帮助识别 IC 是否由少数极端截面驱动。当前 `calc_icir` 只返回一个 float，信息量有限。
-
-**建议**: 新增 `calc_ic_stats(factor, returns)` 函数，返回包含 mean、std、icir、t_stat、p_value、skew、kurtosis 的 `pd.Series` 或 dict，替代或补充当前单一的 `calc_icir`。
-
-## 3. 增加零值感知分组 / Add Zero-Aware Quantization
-
-alphalens 的 `quantize_factor` 函数有一个 `zero_aware=True` 模式：将因子值先按正/负分为两部分，各自独立做分位数分组，然后统一标记为 1 到 N。负值一侧标记为最做空组到最不空组，正值一侧标记为最不多组到最多多组。
-
-这在加密货币因子分析中特别有价值：许多技术因子（如动量、波动率）自然以零为分界线——正动量 = 看多，负动量 = 看空。使用 `zero_aware` 分组可以确保零值附近的资产不会被随机分配到多空两侧，避免分组边界穿越零点导致的信号失真。
-
-当前 `quantile_group` 使用 `pd.qcut` 做简单等频分组，不考虑因子的正负结构。
-
-**建议**: 在 `grouping.py` 的 `quantile_group` 中增加 `zero_aware: bool = False` 参数。当 `zero_aware=True` 时，将因子按正负拆分后各自做分位数分组，最终标签仍然为 0 到 n_groups-1。
-
-## 4. 增加数据质量追踪与 max_loss 机制 / Add Data Quality Tracking
-
-alphalens 在数据准备阶段有一个精巧的 `max_loss` 机制：在合并因子值、前向收益率、分组标签时，逐阶段追踪 NaN 丢弃比例，如果总数据损失超过阈值（默认 35%），抛出 `MaxLossExceededError` 并打印各阶段丢失详情。
-
-当前 `FactorAnalysis` 的各函数内部静默过滤 NaN/Inf，不报告丢弃了多少数据。如果因子和收益率对齐后 80% 的数据都丢失了，分析结果毫无意义但不会有任何警告。
-
-**建议**: 在 `evaluator.py` 的 `FactorEvaluator` 初始化阶段增加数据质量检查步骤，计算因子与收益率对齐后的数据覆盖率（非 NaN 比例），低于阈值时发出 `UserWarning` 或抛出异常。可以作为一个可选的 `max_loss: float = 0.35` 参数。
-
-## 5. 引入分组中性化权重构建 / Add Group-Neutral Weight Construction
-
-alphalens 的 `factor_weights()` 函数通过 `demeaned` 和 `group_adjust` 两个正交标志位，支持 5 种权重构建模式：
-
-| demeaned | group_adjust | 效果 |
-|---|---|---|
-| False | False | 原始因子值归一化，多头偏斜 |
-| True | False | 去均值后归一化，金额中性多空 |
-| False | True | 组内归一化后跨组再归一化，组中性 |
-| True | True | 组中性 + 金额中性 |
-
-当前 `FactorAnalysis` 的净值曲线只做简单等权分组，不考虑行业/板块中性化。在加密货币市场中，BTC 生态、DeFi、Layer2 等不同板块可能有系统性收益差异，不做中性化会导致因子收益被板块效应污染。
-
-**建议**: 在 `portfolio.py` 中增加 `calc_neutralized_curve(factor, returns, groups, ...)` 函数，或在现有净值曲线函数中增加 `groups` 参数（行业标签 Series），支持组内去均值后再构建多空组合。`groups` 可以通过交易对名称前缀自动推断（如 `BTC*` = BTC 生态）。
-
-## 6. 支持多调仓频率衰减分析 / Add Multi-Holding-Period Decay Analysis
-
-alphalens 原生支持多周期前向收益率（1D/5D/10D），但其设计有一个问题：不同周期的收益率在量纲上不可直接对比（日收益率 vs 5 日收益率），导致画图和报告缺乏可比性。
-
-更好的方式是**保持统一的基础收益率（日频），通过改变调仓频率来分析信号衰减**。例如：
-- **调仓周期 = 1 天**: 每天根据最新因子值重新分组，产生每日调仓净值曲线
-- **调仓周期 = 5 天**: 每 5 天根据最新因子值重新分组，中间 4 天持仓不变
-- **调仓周期 = 10 天**: 每 10 天重新分组，中间 9 天持仓不变
-
-这样三条净值曲线都基于相同的日收益率，可以直接在同一张图上对比，观察"多调仓 vs 少调仓"的收益差异。差异越小，说明因子信号持续性越好（低频调仓也不会损失太多 alpha）。
-
-当前 `FactorAnalysis` 的净值曲线函数每天都重新分组，等效于调仓周期 = 1 天，无法评估更长持有期的效果。
-
-**建议**: 在 `portfolio.py` 的净值曲线函数中增加 `rebalance_freq: int = 1` 参数，表示每多少天重新调仓。在非调仓日，沿用上一个调仓日的分组结果计算当日收益。在 `FactorEvaluator` 中默认对 `rebalance_freq=[1, 5, 10]` 分别计算并输出到 report，方便对比信号衰减特征。
-
-## 7. 采用 Tear Sheet 分层编排模式 / Adopt Tear Sheet Composition Pattern
-
-alphalens 的核心设计模式是将分析分为四个正交子报告（tear sheets），每个子报告独立可调用：
-
-| 子报告 | 内容 | 对应 FactorAnalysis |
-|---|---|---|
-| Summary | 收益表 + IC 表 + 换手率表 | report.py 的 `generate_report` |
-| Returns | 分组收益 + 净值曲线 + 多空价差 | portfolio.py + metrics.py (Sharpe等) |
-| Information | IC 时序 + 直方图 + QQ图 + 月度热力图 | metrics.py (IC/RankIC) |
-| Turnover | 分组换手率 + 排名自相关 | 待新增 |
-
-alphalens 通过 `create_full_tear_sheet()` 组合所有子报告，但也允许单独调用 `create_returns_tear_sheet()` 等。这种分层模式的好处是：用户可以按需运行部分分析（节省计算时间），也可以自定义组合。
-
-当前 `FactorAnalysis` 计划中的 `FactorEvaluator` 是一个"全有或全无"的编排器。建议参考 alphalens 的分层思路，将 `FactorEvaluator` 的分析步骤拆分为可独立调用的方法，`generate_report` 可以选择性组合。
-
-**建议**: 在 `evaluator.py` 中将 `FactorEvaluator` 设计为分阶段执行：`run_metrics()` → `run_grouping()` → `run_curves()` → `run_turnover()` → `generate_report(select=None)`。用户可以通过 `select=["returns", "information"]` 只运行感兴趣的子分析，也可以调用 `run_all()` 执行完整流程。
+- `scripts/bench_full_backtest.py` — 全量回测基准测试 (全流程计时)
+- `scripts/bench_eval_profiling.py` — 评估环节细粒度计时 (函数级 + 内部操作级)
