@@ -3,6 +3,16 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 14] 全量回归测试验证 — 1350 passed, 81 pre-existing failures, NO REGRESSION
+- 运行 tests/ 全量回归: 1350 passed, 81 failed, 1 skipped (耗时 810s)
+- P0-P3 优化相关测试 (59 项) 全部通过:
+  - test_p0_chunk_passthrough (8), test_p0_chunk_cache (6), test_p1_portfolio_vectorized (11)
+  - test_p2_quantile_vectorized (10), test_p3_neutralize_merge (8), test_p0p3_e2e_benchmark (8)
+  - test_quick_screen (8)
+- 81 个失败均为 pre-existing FactorLib 注册表问题 (AlphaMomentum not found), 与本次优化无关
+- 验证通过: 所有公共 API 签名不变, FactorEvaluator 公共属性不变, chunk_size 分块正常, run_quick() 可调用
+- P0-P3 优化迭代 v2 全部 14 个任务完成, 无回归引入
+
 [2026-04-09 Task 13] E2E 性能基准测试 — 531/531 checks passed
 - 新增测试: tests/test_p0p3_e2e_benchmark.py (531/531 通过)
 - 8 个测试模块:
