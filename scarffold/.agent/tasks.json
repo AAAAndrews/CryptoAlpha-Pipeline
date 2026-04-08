@@ -44,7 +44,7 @@
   {
     "id": 8,
     "task": "测试 - P1 portfolio 向量化数值一致性 (tests/test_p1_portfolio_vectorized.py)：6 种 mock 场景 × long/short/hedge 三曲线 diff < 1e-10、rebalance_freq > 1 一致性、_raw 模式一致性、不同 top_k/bottom_k 组合、含 NaN 数据、chunk_size 分块模式正确",
-    "passes": false,
+    "passes": true,
     "deps": [7]
   },
   {

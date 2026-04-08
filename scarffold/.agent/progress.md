@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 8] P1 portfolio 向量化数值一致性测试 — 68/68 checks passed
+- 新增测试: tests/test_p1_portfolio_vectorized.py (68/68 通过)
+- 11 个测试模块:
+  1. 6 种 mock 场景 × long/short/hedge 三曲线 vs reference groupby.apply diff < 1e-10
+  2. rebalance_freq 1/2/3/5/10 一致性
+  3. _raw 模式一致性 (cumprod 起始值不被覆写)
+  4. 8 种 top_k/bottom_k 组合一致性 (n_groups=3/5/10)
+  5. 薄包装函数 (calc_long_only/short_only/top_bottom) 与 calc_portfolio_curves 一致
+  6. 含 NaN 数据 (5%/10%/20%) 一致性
+  7. 预计算 group_labels 传入一致性 (含 rebalance_freq)
+  8. evaluator chunk_size 分块模式 (30/50/60) vs 全量 diff < 1e-8
+  9. _raw + rebalance_freq 组合一致性
+  10. 含 NaN + evaluator chunk_size 组合
+  11. 曲线长度/索引/起始值/hedge_daily == long_daily + short_daily 结构验证
+- Reference 实现: 测试内嵌旧 groupby.apply 逐截面计算逻辑，确保向量化结果数值等价
+- 所有场景最大 diff ≤ 5.46e-12 (远优于 1e-10 阈值)
+- 用法: python tests/test_p1_portfolio_vectorized.py
+
 [2026-04-09 Task 7] P1 portfolio._portfolio_curves_core numpy 向量化 — 221/221 tests passed
 - 修改文件: FactorAnalysis/portfolio.py (_portfolio_curves_core + docstring)
 - 将 groupby.apply(_portfolio_returns) 替换为 unstack + numpy boolean mask 向量化计算
