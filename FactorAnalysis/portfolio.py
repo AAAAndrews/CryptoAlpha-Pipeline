@@ -170,8 +170,11 @@ def _portfolio_curves_core(
     group_labels: pd.Series | None = None,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
-    核心计算：单次 groupby.apply 同时输出 long/short/hedge 三条净值曲线（无参数校验）。
-    Core: single groupby.apply outputs long/short/hedge equity curves (no validation).
+    核心计算：numpy 向量化同时输出 long/short/hedge 三条净值曲线（无参数校验）。
+    Core: numpy vectorized computation outputs long/short/hedge equity curves (no validation).
+
+    使用 unstack + numpy boolean mask 替代 groupby.apply，单次 numpy 批量计算。
+    Uses unstack + numpy boolean mask replacing groupby.apply, single numpy batch computation.
 
     供 calc_portfolio_curves 和薄包装函数内部使用。
     Used internally by calc_portfolio_curves and thin-wrapper functions.
@@ -180,35 +183,55 @@ def _portfolio_curves_core(
     labels = _calc_labels_with_rebalance(
         factor, n_groups, rebalance_freq, group_labels=group_labels,
     )
-    df = pd.DataFrame({"label": labels, "returns": returns})
+
+    # unstack 为 2D 矩阵 (timestamp × symbol) / unstack to 2D matrices
+    labels_mat = labels.unstack()
+    returns_mat = returns.unstack()
+
+    # 对齐行列索引（与原 pd.DataFrame({"label":..., "returns":...}) 行为一致）
+    # Align row/column indices (same behavior as pd.DataFrame alignment)
+    all_idx = labels_mat.index.union(returns_mat.index)
+    all_cols = labels_mat.columns.union(returns_mat.columns)
+    labels_mat = labels_mat.reindex(index=all_idx, columns=all_cols)
+    returns_mat = returns_mat.reindex(index=all_idx, columns=all_cols)
 
     top_labels = set(range(n_groups - top_k, n_groups))
     bottom_labels = set(range(bottom_k))
 
-    def _portfolio_returns(g: pd.DataFrame) -> pd.Series:
-        """
-        截面内同时计算多/空/对冲收益 / Compute long/short/hedge returns in one cross-section.
-        """
-        valid = g["returns"].notna() & np.isfinite(g["returns"])
-        long_mask = valid & g["label"].isin(top_labels)
-        short_mask = valid & g["label"].isin(bottom_labels)
-        long_ret = g.loc[long_mask, "returns"].mean() if long_mask.sum() > 0 else 0.0
-        # 做空 = 收益取反 / short = negate returns
-        short_ret = (
-            -g.loc[short_mask, "returns"].mean() if short_mask.sum() > 0 else 0.0
-        )
-        return pd.Series({
-            "long": long_ret,
-            "short": short_ret,
-            "hedge": long_ret + short_ret,
-        })
+    # numpy 数组加速 / numpy arrays for speed
+    labels_np = labels_mat.values
+    returns_np = returns_mat.values.astype(np.float64)
 
-    daily = df.groupby(level=0).apply(_portfolio_returns)
+    # 有效收益掩码（排除 NaN 和 Inf）/ valid returns mask (exclude NaN and Inf)
+    valid = np.isfinite(returns_np)
+
+    # 构造 long/short boolean mask / build long/short boolean masks
+    long_mask = np.isin(labels_np, list(top_labels)) & valid
+    short_mask = np.isin(labels_np, list(bottom_labels)) & valid
+
+    # 安全除法：逐行 sum/count 计算，避免 nanmean 的 RuntimeWarning
+    # Safe division: sum/count per row, avoiding nanmean RuntimeWarning
+    long_count = long_mask.sum(axis=1)
+    safe_long_count = np.where(long_count > 0, long_count, 1).astype(np.float64)
+    long_sum = np.where(long_mask, returns_np, 0.0).sum(axis=1)
+    long_daily = np.where(long_count > 0, long_sum / safe_long_count, 0.0)
+
+    short_count = short_mask.sum(axis=1)
+    safe_short_count = np.where(short_count > 0, short_count, 1).astype(np.float64)
+    short_sum = np.where(short_mask, returns_np, 0.0).sum(axis=1)
+    short_daily = np.where(short_count > 0, -short_sum / safe_short_count, 0.0)
+
+    hedge_daily = long_daily + short_daily
+
+    # 构造 Series / build Series
+    long_daily_s = pd.Series(long_daily, index=all_idx, name="long")
+    short_daily_s = pd.Series(short_daily, index=all_idx, name="short")
+    hedge_daily_s = pd.Series(hedge_daily, index=all_idx, name="hedge")
 
     # 累积净值 / cumulative equity
-    long_curve = (1.0 + daily["long"]).cumprod()
-    short_curve = (1.0 + daily["short"]).cumprod()
-    hedge_curve = (1.0 + daily["hedge"]).cumprod()
+    long_curve = (1.0 + long_daily_s).cumprod()
+    short_curve = (1.0 + short_daily_s).cumprod()
+    hedge_curve = (1.0 + hedge_daily_s).cumprod()
 
     if not _raw:
         long_curve.iloc[0] = 1.0
@@ -231,11 +254,10 @@ def calc_portfolio_curves(
     """
     统一计算多/空/对冲三条净值曲线 / Unified long/short/hedge equity curve calculation.
 
-    单次 groupby.apply 同时输出三条日收益序列，将三次独立调用合并为一次，
-    消除重复的标签计算和 DataFrame 构建。
-    Single groupby.apply outputs three daily return series simultaneously,
-    merging three independent calls into one, eliminating redundant label
-    computation and DataFrame construction.
+    使用 unstack + numpy boolean mask 向量化计算，单次 numpy 批量输出三条日收益序列，
+    消除 groupby.apply 逐截面 Python 函数调用开销。
+    Uses unstack + numpy boolean mask vectorized computation, single numpy batch
+    outputs three daily return series, eliminating groupby.apply per-cross-section overhead.
 
     Parameters / 参数:
         factor: 因子值，MultiIndex (timestamp, symbol) / Factor values

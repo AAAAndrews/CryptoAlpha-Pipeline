@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 7] P1 portfolio._portfolio_curves_core numpy 向量化 — 221/221 tests passed
+- 修改文件: FactorAnalysis/portfolio.py (_portfolio_curves_core + docstring)
+- 将 groupby.apply(_portfolio_returns) 替换为 unstack + numpy boolean mask 向量化计算
+- 核心变更:
+  1. labels.unstack() + returns.unstack() → 2D numpy 矩阵 (timestamp × symbol)
+  2. np.isin(labels_np, top_labels) & np.isfinite(returns_np) 构造 boolean mask
+  3. np.where(mask, returns, 0.0).sum(axis=1) / count 安全逐行求均值
+  4. 消除逐截面 Python groupby.apply 循环，单次 numpy 批量计算 long/short/hedge 日收益
+- 保持 rebalance_freq/_raw/group_labels 参数完全兼容
+- 行列索引使用 union + reindex 对齐，与原 pd.DataFrame 构造行为一致
+- 回归测试: 221 tests passed (portfolio/chunk/integration/rebalance 全量)
+- 7 个 pre-existing failures 均为 Task 4/5 --mode quick 默认值导致，与本次变更无关
+- 用法: 无 API 变更，calc_portfolio_curves / calc_long_only / calc_short_only / calc_top_bottom 接口不变
+
 [2026-04-09 Task 6] Quick Screen 管道功能验证 — 157/157 checks passed
 - 新增测试: tests/test_quick_screen.py (157/157 通过)
 - 8 个测试模块:

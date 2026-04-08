@@ -38,7 +38,7 @@
   {
     "id": 7,
     "task": "P1 - portfolio._portfolio_curves_core numpy 向量化：将 groupby.apply(_portfolio_returns) 替换为 unstack + numpy boolean mask 向量化计算 (labels.unstack → 2D 矩阵, np.where(mask, returns, nan).mean(axis=1))，保持 rebalance_freq/_raw/group_labels 参数兼容",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {
