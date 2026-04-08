@@ -81,58 +81,71 @@ def calc_neutralized_curve(
     else:
         group_labels = groups
 
-    # 构建工作 DataFrame / Build working DataFrame
-    df = pd.DataFrame({
-        "factor": factor,
-        "returns": returns,
-        "group": group_labels,
-    })
+    # P3: unstack 为 2D 矩阵，向量化 demean + group_adjust，避免两次独立 groupby
+    # P3: unstack to 2D matrices, vectorized demean + group_adjust, avoiding two separate groupby
+    factor_mat = factor.unstack()
+    returns_mat = returns.unstack()
+    groups_mat = group_labels.unstack()
 
-    # 排除无效组标签的行 / Exclude rows with invalid group labels
-    valid_group = df["group"].notna() & np.isfinite(df["group"])
-    valid_factor = df["factor"].notna() & np.isfinite(df["factor"])
-    valid_returns = df["returns"].notna() & np.isfinite(df["returns"])
+    # 对齐行列索引（与 pd.DataFrame({"factor":..., "returns":..., "group":...}) 行为一致）
+    # Align row/column indices (same behavior as pd.DataFrame alignment)
+    all_idx = factor_mat.index.union(returns_mat.index).union(groups_mat.index)
+    all_cols = factor_mat.columns.union(returns_mat.columns).union(groups_mat.columns)
+    factor_mat = factor_mat.reindex(index=all_idx, columns=all_cols)
+    returns_mat = returns_mat.reindex(index=all_idx, columns=all_cols)
+    groups_mat = groups_mat.reindex(index=all_idx, columns=all_cols)
 
-    # 组内因子去均值 / Demean factor within groups
-    # 对有效因子值和有效组标签的行做去均值
-    # Demean only on rows with valid factor and group
-    if demeaned:
-        mask_for_demean = valid_group & valid_factor
-        # 需要有足够数据才能做 transform / Need enough data for transform
+    factor_np = factor_mat.values.astype(np.float64)
+    returns_np = returns_mat.values.astype(np.float64)
+    groups_np = groups_mat.values
+
+    # 有效值掩码 / valid value masks
+    valid_factor = np.isfinite(factor_np)
+    valid_returns = np.isfinite(returns_np)
+    valid_groups = np.isfinite(groups_np)
+
+    # 获取唯一组标签 / get unique group labels
+    unique_groups = np.unique(groups_np[valid_groups])
+
+    # 组内因子去均值 (numpy 向量化)
+    # Demean factor within groups (numpy vectorized)
+    # 等价于 groupby([timestamp, group]).transform("mean") 但无 groupby 开销
+    # Equivalent to groupby([timestamp, group]).transform("mean") but without groupby overhead
+    if demeaned and len(unique_groups) > 0:
+        mask_for_demean = valid_groups & valid_factor
         if mask_for_demean.sum() > 0:
-            group_mean = (
-                df.loc[mask_for_demean]
-                .groupby([pd.Grouper(level=0), "group"])["factor"]
-                .transform("mean")
-            )
-            # 只对有效行更新因子值 / Only update factor for valid rows
-            df.loc[mask_for_demean, "factor"] = (
-                df.loc[mask_for_demean, "factor"] - group_mean
-            )
+            for g in unique_groups:
+                g_mask = mask_for_demean & (groups_np == g)
+                count = g_mask.sum(axis=1, keepdims=True)
+                safe_count = np.where(count > 0, count, 1).astype(np.float64)
+                mean = np.where(g_mask, factor_np, 0.0).sum(axis=1, keepdims=True) / safe_count
+                factor_np = np.where(g_mask, factor_np - mean, factor_np)
 
-    # 组内收益去均值 / Adjust returns within groups
-    if group_adjust:
-        mask_for_adjust = valid_group & valid_returns
+    # 组内收益去均值 (numpy 向量化)
+    # Adjust returns within groups (numpy vectorized)
+    if group_adjust and len(unique_groups) > 0:
+        mask_for_adjust = valid_groups & valid_returns
         if mask_for_adjust.sum() > 0:
-            group_mean_ret = (
-                df.loc[mask_for_adjust]
-                .groupby([pd.Grouper(level=0), "group"])["returns"]
-                .transform("mean")
-            )
-            df.loc[mask_for_adjust, "returns"] = (
-                df.loc[mask_for_adjust, "returns"] - group_mean_ret
-            )
+            for g in unique_groups:
+                g_mask = mask_for_adjust & (groups_np == g)
+                count = g_mask.sum(axis=1, keepdims=True)
+                safe_count = np.where(count > 0, count, 1).astype(np.float64)
+                mean = np.where(g_mask, returns_np, 0.0).sum(axis=1, keepdims=True) / safe_count
+                returns_np = np.where(g_mask, returns_np - mean, returns_np)
 
-    # 按中性化因子排名分组 / Rank neutralized factor into groups
-    neutralized_factor = df["factor"]
+    # stack 回 Series（保持与原始 factor/returns 相同的 MultiIndex 结构）
+    # stack back to Series (maintaining same MultiIndex structure as original factor/returns)
+    neutralized_factor = pd.DataFrame(factor_np, index=all_idx, columns=all_cols).stack()
+    neutralized_returns = pd.DataFrame(returns_np, index=all_idx, columns=all_cols).stack()
+
+    # 按中性化因子排名分组 / rank neutralized factor into groups
     labels = quantile_group(neutralized_factor, n_groups=n_groups)
-    df["label"] = labels
 
-    # 复用 calc_portfolio_curves 获取对冲净值曲线，消除重复 groupby.apply
-    # Reuse calc_portfolio_curves for hedge equity curve, eliminating redundant groupby.apply
+    # 复用 P1 向量化 calc_portfolio_curves 获取对冲净值曲线
+    # Reuse P1 vectorized calc_portfolio_curves for hedge equity curve
     _, _, hedge_curve = calc_portfolio_curves(
-        df["factor"], df["returns"],
+        neutralized_factor, neutralized_returns,
         n_groups=n_groups, top_k=1, bottom_k=1,
-        rebalance_freq=1, _raw=_raw, group_labels=df["label"],
+        rebalance_freq=1, _raw=_raw, group_labels=labels,
     )
     return hedge_curve

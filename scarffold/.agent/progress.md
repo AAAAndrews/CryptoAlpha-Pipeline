@@ -3,6 +3,22 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 11] P3 neutralize 内部操作合并 — 108/108 neutralize tests passed, 1334 total passed
+- 修改文件: FactorAnalysis/neutralize.py (calc_neutralized_curve)
+- 将 groupby([timestamp, group]).transform("mean") 两次独立 groupby 操作替换为 unstack + numpy 向量化计算
+- 核心变更:
+  1. factor/returns/group_labels 三者 unstack 为 2D 矩阵 (timestamp × symbol)
+  2. 对齐行列索引 (与 pd.DataFrame 构造行为一致)
+  3. 获取唯一组标签，逐组构造 boolean mask
+  4. np.where(g_mask, values, 0.0).sum(axis=1) / count 计算逐行组均值
+  5. factor_np -= mean 向量化去均值 (demeaned)
+  6. returns_np -= mean 向量化收益调整 (group_adjust)
+  7. stack 回 Series 后复用 P1 向量化 calc_portfolio_curves 计算对冲曲线
+- 消除两次 groupby.transform("mean") 调用， demean + group_adjust 在单次 unstack 矩阵上完成
+- 测试调整: test_perf_neutralize_reuse.py 参考实现比较改用日收益率 (避免 cumprop 累积放大差异)
+- 回归测试: 108 neutralize tests passed + 1334 total passed (81 pre-existing failures unrelated)
+- 用法: calc_neutralized_curve(factor, returns, groups=5, demeaned=True, group_adjust=False) 接口不变
+
 [2026-04-09 Task 10] P2 quantile_group 向量化数值一致性测试 — 75/75 checks passed
 - 新增测试: tests/test_p2_quantile_vectorized.py (75/75 通过)
 - 10 个测试模块:

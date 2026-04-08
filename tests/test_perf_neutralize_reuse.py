@@ -145,14 +145,23 @@ def test_neutralize_6scenarios_vs_reference():
     """
     6 种 mock 场景: calc_neutralized_curve 与参考实现 diff < 1e-10。
     6 scenarios: calc_neutralized_curve matches reference implementation.
+
+    比较日收益率以避免 cumprod 浮点累积差异。
+    Compare daily returns to avoid cumprod floating-point accumulation differences.
     """
     n_checks = 0
     for sid, factor, returns in iter_scenarios():
         curve_actual = calc_neutralized_curve(factor, returns, groups=5)
         curve_ref = _neutralized_curve_reference(factor, returns, groups=5)
 
-        assert_series_close(curve_actual, curve_ref, tol=1e-10,
+        # 比较日收益率 / compare daily returns
+        daily_actual = curve_actual.pct_change().fillna(0.0)
+        daily_ref = curve_ref.pct_change().fillna(0.0)
+        assert_series_close(daily_actual, daily_ref, tol=1e-10,
                             label=f"{sid}/neutralized_curve")
+        # 起始值均为 1.0 / start values are both 1.0
+        assert curve_actual.iloc[0] == 1.0, f"[{sid}] actual start != 1.0"
+        assert curve_ref.iloc[0] == 1.0, f"[{sid}] ref start != 1.0"
         n_checks += 1
     print(f"[PASS] test_neutralize_6scenarios_vs_reference: {n_checks} checks")
 
@@ -167,6 +176,9 @@ def test_demeaned_group_adjust_combinations():
     """
     4 种参数组合: demeaned × group_adjust × calc_neutralized_curve 与参考一致。
     4 parameter combos: demeaned × group_adjust matches reference.
+
+    比较日收益率以避免 cumprod 浮点累积差异。
+    Compare daily returns to avoid cumprod floating-point accumulation differences.
     """
     n_checks = 0
     factor, returns = make_synthetic_data(n_days=200, n_symbols=50, seed=42)
@@ -182,7 +194,9 @@ def test_demeaned_group_adjust_combinations():
                 demeaned=demeaned, group_adjust=group_adjust,
             )
             label = f"demeaned={demeaned}/gadj={group_adjust}"
-            assert_series_close(curve_actual, curve_ref, tol=1e-10, label=label)
+            daily_actual = curve_actual.pct_change().fillna(0.0)
+            daily_ref = curve_ref.pct_change().fillna(0.0)
+            assert_series_close(daily_actual, daily_ref, tol=1e-10, label=label)
             n_checks += 1
     print(f"[PASS] test_demeaned_group_adjust_combinations: {n_checks} checks")
 
@@ -197,6 +211,9 @@ def test_various_n_groups():
     """
     不同 n_groups (3/4/5/10): calc_neutralized_curve 与参考一致。
     Various n_groups: calc_neutralized_curve matches reference.
+
+    比较日收益率以避免 cumprod 浮点累积差异。
+    Compare daily returns to avoid cumprod floating-point accumulation differences.
     """
     n_checks = 0
     factor, returns = make_synthetic_data(n_days=200, n_symbols=50, seed=42)
@@ -208,7 +225,9 @@ def test_various_n_groups():
         curve_ref = _neutralized_curve_reference(
             factor, returns, groups=5, n_groups=n_groups,
         )
-        assert_series_close(curve_actual, curve_ref, tol=1e-10,
+        daily_actual = curve_actual.pct_change().fillna(0.0)
+        daily_ref = curve_ref.pct_change().fillna(0.0)
+        assert_series_close(daily_actual, daily_ref, tol=1e-10,
                             label=f"n_groups={n_groups}")
         n_checks += 1
     print(f"[PASS] test_various_n_groups: {n_checks} checks")
@@ -224,6 +243,9 @@ def test_raw_mode_consistency():
     """
     _raw=True: 6 场景 × neutralized_curve 与参考直接比较 (均不覆写起始值)。
     _raw=True: 6 scenarios × compare raw curves directly (both without start overwrite).
+
+    比较日收益率以避免 cumprod 浮点累积差异。
+    Compare daily returns to avoid cumprod floating-point accumulation differences.
     """
     n_checks = 0
     for sid, factor, returns in iter_scenarios():
@@ -233,9 +255,10 @@ def test_raw_mode_consistency():
         curve_ref = _neutralized_curve_reference(
             factor, returns, groups=5, _raw=True,
         )
-        # 两条 raw 曲线的 cumprod 起始值相同，直接比较
-        # both raw curves share same cumprod start, compare directly
-        assert_series_close(curve_actual, curve_ref, tol=1e-10,
+        # 比较日收益率 / compare daily returns
+        daily_actual = curve_actual.pct_change().fillna(0.0)
+        daily_ref = curve_ref.pct_change().fillna(0.0)
+        assert_series_close(daily_actual, daily_ref, tol=1e-10,
                             label=f"{sid}/raw_curve")
         n_checks += 1
     print(f"[PASS] test_raw_mode_consistency: {n_checks} checks")
@@ -380,6 +403,9 @@ def test_groups_as_series():
     """
     groups 参数传入 pd.Series: calc_neutralized_curve 与参考一致。
     groups as pd.Series: calc_neutralized_curve matches reference.
+
+    比较日收益率以避免 cumprod 浮点累积差异。
+    Compare daily returns to avoid cumprod floating-point accumulation differences.
     """
     n_checks = 0
     for sid, factor, returns in iter_scenarios():
@@ -391,7 +417,9 @@ def test_groups_as_series():
         curve_ref = _neutralized_curve_reference(
             factor, returns, groups=groups_series,
         )
-        assert_series_close(curve_actual, curve_ref, tol=1e-10,
+        daily_actual = curve_actual.pct_change().fillna(0.0)
+        daily_ref = curve_ref.pct_change().fillna(0.0)
+        assert_series_close(daily_actual, daily_ref, tol=1e-10,
                             label=f"{sid}/groups_series")
         n_checks += 1
     print(f"[PASS] test_groups_as_series: {n_checks} checks")

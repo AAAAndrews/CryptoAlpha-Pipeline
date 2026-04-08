@@ -62,7 +62,7 @@
   {
     "id": 11,
     "task": "P3 - neutralize 内部操作合并：将 calc_neutralized_curve 中的 demean + re-rank 合并为单次 unstack 矩阵操作 (避免两次独立 groupby)，复用 P1 向量化 portfolio 计算对冲收益",
-    "passes": false,
+    "passes": true,
     "deps": [8, 10]
   },
   {
