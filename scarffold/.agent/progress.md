@@ -3,6 +3,24 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 10] P2 quantile_group 向量化数值一致性测试 — 75/75 checks passed
+- 新增测试: tests/test_p2_quantile_vectorized.py (75/75 通过)
+- 10 个测试模块:
+  1. 6 种 mock 场景 × group labels Series diff < 1e-10 + NaN 位置一致性
+  2. zero_aware=True/False 一致性 (6 场景 × 2 模式)
+  3. 不同 n_groups (2/3/5/10/20) 一致性 + 标签范围检查
+  4. 含 NaN 数据 (5%/10%/20%/30%) × zero_aware 一致性
+  5. 含大量重复值 (ties): 离散 10 值、全相同值、ties+NaN、3 值/5 组、zero_aware+ties
+  6. chunk_size 分块模式 (30/50/60) vs 全量 diff < 1e-8
+  7. 输出结构一致性: 索引/长度/dtype/整数标签/NaN 传播
+  8. n_groups < 2 边界情况: 正确抛出 ValueError
+  9. 空 factor / 全 NaN: 正确返回全 NaN 标签
+  10. zero_aware 边界: 全正/全负/含零
+- Reference 实现: 使用 Python bisect_right 模块独立实现与 np.searchsorted(side='right') 等价逻辑，
+  避免依赖 pd.qcut (其 boundary 行为与 searchsorted 不一致，diff=1.0 误报)
+- 回归测试: 42 core tests passed (p0_chunk/p1_portfolio/p2_quantile/quick_screen)
+- 用法: python tests/test_p2_quantile_vectorized.py
+
 [2026-04-09 Task 9] P2 grouping.quantile_group numpy 向量化 — 全量回归通过
 - 修改文件: FactorAnalysis/grouping.py (quantile_group + _assign_group_vec + _assign_zero_aware_vec)
 - 将 groupby.apply(_assign_group) 替换为 unstack + numpy 逐行 percentile + searchsorted 向量化计算

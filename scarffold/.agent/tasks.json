@@ -56,7 +56,7 @@
   {
     "id": 10,
     "task": "测试 - P2 quantile_group 向量化数值一致性 (tests/test_p2_quantile_vectorized.py)：6 种 mock 场景 × group labels Series diff < 1e-10、zero_aware=True/False 一致性、不同 n_groups (3/5/10)、含 NaN 数据、含大量重复值 (ties)、chunk_size 分块模式正确",
-    "passes": false,
+    "passes": true,
     "deps": [9]
   },
   {
