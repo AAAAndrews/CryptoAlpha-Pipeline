@@ -191,7 +191,11 @@ class FactorEvaluator:
 
     # --- 子分析步骤 / Sub-analysis steps ---
 
-    def run_metrics(self) -> "FactorEvaluator":
+    def run_metrics(
+        self,
+        chunk_factor: list | None = None,
+        chunk_returns: list | None = None,
+    ) -> "FactorEvaluator":
         """
         IC 分析：计算 IC / Rank IC / ICIR / IC 统计显著性。
         IC analysis: compute IC / Rank IC / ICIR / IC statistical significance.
@@ -201,6 +205,12 @@ class FactorEvaluator:
         When chunk_size is set, compute IC series per time chunk, then aggregate.
         IC values are independent per timestamp; merged chunked results match full
         calculation within 1e-8 tolerance.
+
+        Parameters / 参数:
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+            chunk_returns: 预计算的收益分块列表，传入时跳过内部 split_into_chunks
+                           Pre-computed returns chunk list; skips internal split when provided
 
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
@@ -213,8 +223,9 @@ class FactorEvaluator:
             self.ic_stats = calc_ic_stats(self.factor, self.returns)
         else:
             # 分块模式 / chunked mode
-            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
-            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            # 使用预计算分块或内部 split / use pre-computed chunks or internal split
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = chunk_returns if chunk_returns is not None else split_into_chunks(self.returns, self.chunk_size)
             n_chunks = len(factor_chunks)
 
             # 逐块计算 IC / RankIC，带内存监控 / compute IC per chunk with memory tracking
@@ -236,7 +247,10 @@ class FactorEvaluator:
 
         return self
 
-    def run_grouping(self) -> "FactorEvaluator":
+    def run_grouping(
+        self,
+        chunk_factor: list | None = None,
+    ) -> "FactorEvaluator":
         """
         计算分位数分组标签 / Compute quantile group labels.
 
@@ -247,6 +261,10 @@ class FactorEvaluator:
         ensuring cross-sectional completeness within each chunk. Group labels
         are independent per timestamp; merged results match full calculation.
 
+        Parameters / 参数:
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
         """
@@ -255,7 +273,8 @@ class FactorEvaluator:
             self.group_labels = quantile_group(self.factor, n_groups=self.n_groups)
         else:
             # 分块模式：逐块计算分组标签，带内存监控 / chunked mode with memory tracking
-            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            # 使用预计算分块或内部 split / use pre-computed chunks or internal split
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
             n_chunks = len(factor_chunks)
             chunk_labels = []
             for i, fc in enumerate(factor_chunks):
@@ -271,7 +290,12 @@ class FactorEvaluator:
 
         return self
 
-    def run_curves(self) -> "FactorEvaluator":
+    def run_curves(
+        self,
+        chunk_factor: list | None = None,
+        chunk_returns: list | None = None,
+        chunk_groups: list | None = None,
+    ) -> "FactorEvaluator":
         """
         净值曲线 + 成本扣除 + 绩效比率 / Equity curves + cost deduction + performance ratios.
 
@@ -283,6 +307,14 @@ class FactorEvaluator:
         When chunk_size is set, build equity curves per time chunk using raw curves
         (without overwriting start value), merge, then overwrite start to 1.0,
         ensuring numerical consistency with full calculation.
+
+        Parameters / 参数:
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+            chunk_returns: 预计算的收益分块列表，传入时跳过内部 split_into_chunks
+                           Pre-computed returns chunk list; skips internal split when provided
+            chunk_groups: 预计算的分组标签分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed group labels chunk list; skips internal split when provided
 
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
@@ -299,10 +331,13 @@ class FactorEvaluator:
             )
         else:
             # 分块模式：逐块计算 raw 曲线后合并，带内存监控 / chunked mode with memory tracking
-            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
-            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            # 使用预计算分块或内部 split / use pre-computed chunks or internal split
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = chunk_returns if chunk_returns is not None else split_into_chunks(self.returns, self.chunk_size)
             # 分块缓存标签 / split cached labels into chunks
-            if cached_labels is not None:
+            if chunk_groups is not None:
+                label_chunks = chunk_groups
+            elif cached_labels is not None:
                 label_chunks = split_into_chunks(cached_labels, self.chunk_size)
             else:
                 label_chunks = [None] * len(factor_chunks)
@@ -357,7 +392,11 @@ class FactorEvaluator:
         )
         return self
 
-    def run_turnover(self) -> "FactorEvaluator":
+    def run_turnover(
+        self,
+        chunk_factor: list | None = None,
+        chunk_groups: list | None = None,
+    ) -> "FactorEvaluator":
         """
         换手率指标：分组换手率 + 因子排名自相关。
         Turnover metrics: quantile group turnover + factor rank autocorrelation.
@@ -366,6 +405,12 @@ class FactorEvaluator:
         跨块边界的换手率/自相关标记为 NaN（无法跨块比较前序截面）。
         When chunk_size is set, compute turnover and rank autocorrelation per time chunk.
         Cross-chunk boundary values are marked as NaN (predecessor cross-section unavailable).
+
+        Parameters / 参数:
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+            chunk_groups: 预计算的分组标签分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed group labels chunk list; skips internal split when provided
 
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
@@ -381,9 +426,12 @@ class FactorEvaluator:
             self.rank_autocorr = calc_rank_autocorr(self.factor)
         else:
             # 分块模式：逐块计算换手率和排名自相关，带内存监控 / chunked mode with memory tracking
-            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
+            # 使用预计算分块或内部 split / use pre-computed chunks or internal split
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
             # 分块缓存标签 / split cached labels into chunks
-            if cached_labels is not None:
+            if chunk_groups is not None:
+                label_chunks = chunk_groups
+            elif cached_labels is not None:
                 label_chunks = split_into_chunks(cached_labels, self.chunk_size)
             else:
                 label_chunks = [None] * len(factor_chunks)
@@ -409,6 +457,9 @@ class FactorEvaluator:
         demeaned: bool = True,
         group_adjust: bool = False,
         n_groups: int | None = None,
+        chunk_factor: list | None = None,
+        chunk_returns: list | None = None,
+        chunk_groups: list | None = None,
     ) -> "FactorEvaluator":
         """
         分组中性化净值曲线 / Group-neutralized equity curve.
@@ -429,6 +480,12 @@ class FactorEvaluator:
                           Whether to adjust returns within groups, default False
             n_groups: 中性化后排名分组数，None 时使用 self.n_groups
                       Ranking groups after neutralization, defaults to self.n_groups when None
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+            chunk_returns: 预计算的收益分块列表，传入时跳过内部 split_into_chunks
+                           Pre-computed returns chunk list; skips internal split when provided
+            chunk_groups: 预计算的分组分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed groups chunk list; skips internal split when provided
 
         Returns / 返回:
             self，支持链式调用 / self, for method chaining
@@ -457,11 +514,14 @@ class FactorEvaluator:
             )
         else:
             # 分块模式：逐块计算 raw 中性化曲线后合并，带内存监控 / chunked mode with memory tracking
-            factor_chunks = split_into_chunks(self.factor, self.chunk_size)
-            returns_chunks = split_into_chunks(self.returns, self.chunk_size)
+            # 使用预计算分块或内部 split / use pre-computed chunks or internal split
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
+            returns_chunks = chunk_returns if chunk_returns is not None else split_into_chunks(self.returns, self.chunk_size)
 
             # 分块 groups / split groups into chunks
-            if isinstance(neutralize_groups, pd.Series):
+            if chunk_groups is not None:
+                groups_chunks = chunk_groups
+            elif isinstance(neutralize_groups, pd.Series):
                 groups_chunks = split_into_chunks(neutralize_groups, self.chunk_size)
             else:
                 groups_chunks = [neutralize_groups] * len(factor_chunks)

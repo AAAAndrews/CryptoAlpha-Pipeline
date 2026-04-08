@@ -2,7 +2,7 @@
   {
     "id": 1,
     "task": "P0 - evaluator 各 run_* 方法增加可选 chunk 列表参数：run_metrics/run_grouping/run_curves/run_turnover/run_neutralize 增加 chunk_factor/chunk_returns/chunk_groups 可选参数，内部检查参数是否已提供，有则跳过 split_into_chunks 调用，不传时行为不变 (向后兼容)",
-    "passes": false,
+    "passes": true,
     "deps": []
   },
   {
