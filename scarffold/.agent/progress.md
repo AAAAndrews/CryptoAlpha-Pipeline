@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 4] Layer 0 快速筛选管道 run_quick() — IC/RankIC/ICIR/IC Stats/Rank Autocorrelation
+- 修改文件: FactorAnalysis/evaluator.py
+- 新增 run_quick() 方法: 仅计算 Layer 0 纯向量化指标 (IC/RankIC/ICIR/IC Stats/Rank Autocorrelation)
+- 新增 run_rank_autocorr() 方法: 从 run_turnover 中提取排名自相关为独立方法，支持 chunk 模式
+- 新增 _quick_mode 属性: run_quick() 设置为 True，其他方法不影响
+- P0 优化兼容: run_quick() 入口一次性 split factor/returns，分发到 run_metrics/run_rank_autocorr
+- 验证内容:
+  - 全量模式: Layer 0 指标全部非空，Layer 1~3 指标全部为 None
+  - 分块模式 (chunk_size=50): Layer 0 指标正常计算
+  - 数值一致性: run_quick() IC/RankIC 与 run_all().run_metrics() diff = 0.00e+00
+  - run_rank_autocorr() 独立调用正常，_quick_mode 保持 False
+- 回归测试: 13/13 P0 chunk tests passed
+- 用法: ev.run_quick().generate_report(select=["metrics", "turnover"])
+
 [2026-04-09 Task 3] P0 chunk 一致性 + 向后兼容测试 — 608/608 checks passed
 - 新增测试: tests/test_p0_chunk_cache.py (608/608 通过)
 - 6 种 mock 场景: 标准场景、大数据量、小数据量、高NaN比例、弱信号+多分组、紧凑分块

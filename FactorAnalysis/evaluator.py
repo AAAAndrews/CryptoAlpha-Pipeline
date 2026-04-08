@@ -8,10 +8,13 @@ supporting selective execution and flexible combination.
 
 子模块 / Sub-modules:
     - run_metrics():     IC / RankIC / ICIR / IC 统计显著性
+    - run_rank_autocorr(): 因子排名自相关
     - run_grouping():    分位数分组标签
     - run_curves():      净值曲线 + 成本扣除 + 绩效比率
     - run_turnover():    分组换手率 + 排名自相关
     - run_neutralize():  分组中性化净值曲线
+    - run_quick():       快速筛选管道 (Layer 0 only)
+    - run_all():         完整分析流程 (Layer 0~3)
 """
 
 from __future__ import annotations
@@ -121,6 +124,9 @@ class FactorEvaluator:
 
         # 中性化净值曲线 / Neutralized equity curve
         self.neutralized_curve: pd.Series | None = None
+
+        # 快速筛选模式标志 / Quick screen mode flag
+        self._quick_mode: bool = False
 
     # --- 缓存管理 / Cache management ---
 
@@ -545,6 +551,39 @@ class FactorEvaluator:
 
         return self
 
+    def run_rank_autocorr(
+        self,
+        chunk_factor: list | None = None,
+    ) -> "FactorEvaluator":
+        """
+        因子排名自相关 / Factor rank autocorrelation.
+
+        单独计算因子排名自相关，可独立调用也可由 run_quick() 编排调用。
+        Computes factor rank autocorrelation independently or orchestrated by run_quick().
+
+        Parameters / 参数:
+            chunk_factor: 预计算的因子分块列表，传入时跳过内部 split_into_chunks
+                          Pre-computed factor chunk list; skips internal split when provided
+
+        Returns / 返回:
+            self，支持链式调用 / self, for method chaining
+        """
+        if self.chunk_size is None:
+            # 全量模式 / full mode
+            self.rank_autocorr = calc_rank_autocorr(self.factor)
+        else:
+            # 分块模式：逐块计算，带内存监控 / chunked mode with memory tracking
+            factor_chunks = chunk_factor if chunk_factor is not None else split_into_chunks(self.factor, self.chunk_size)
+            n_chunks = len(factor_chunks)
+            autocorr_chunks = []
+            for i, fc in enumerate(factor_chunks):
+                with ChunkMemoryTracker(i, n_chunks, description="run_rank_autocorr"):
+                    autocorr_chunks.append(calc_rank_autocorr(fc))
+            # 跨块边界首行设为 NaN / boundary rows set to NaN
+            self.rank_autocorr = merge_chunk_results(autocorr_chunks, "rank_autocorr")
+
+        return self
+
     # --- 编排方法 / Orchestration methods ---
 
     def run_all(self) -> "FactorEvaluator":
@@ -597,6 +636,39 @@ class FactorEvaluator:
             chunk_returns=chunk_returns,
             chunk_groups=chunk_groups,
         )
+
+        return self
+
+    def run_quick(self) -> "FactorEvaluator":
+        """
+        快速筛选管道 / Quick screen pipeline (Layer 0 only).
+
+        仅计算纯向量化指标，零 groupby.apply 调用，适用于因子挖掘 (GP) / 批量巡检。
+        Computes only vectorized Layer 0 metrics: IC/RankIC/ICIR/IC Stats/Rank Autocorrelation.
+        Zero groupby.apply calls, suitable for factor mining (GP) / batch screening.
+
+        P0 优化：当 chunk_size 已设置时，在入口处一次性 split factor/returns，
+        将 chunk 列表分发到 run_metrics/run_rank_autocorr，消除重复 isin 过滤。
+        When chunk_size is set, split factor/returns once at entry,
+        dispatch chunk lists to run_metrics/run_rank_autocorr, eliminating redundant isin filtering.
+
+        Returns / 返回:
+            self，支持链式调用 / self, for method chaining
+        """
+        self._quick_mode = True
+
+        if self.chunk_size is None:
+            # 全量模式：无分块开销 / full mode: no chunking overhead
+            return (self.run_metrics()
+                        .run_rank_autocorr())
+
+        # P0: 一次性分块 factor / returns，分发到各 run_* 方法
+        # P0: one-time split factor/returns, dispatch to run_* methods
+        chunk_factor = split_into_chunks(self.factor, self.chunk_size)
+        chunk_returns = split_into_chunks(self.returns, self.chunk_size)
+
+        self.run_metrics(chunk_factor=chunk_factor, chunk_returns=chunk_returns)
+        self.run_rank_autocorr(chunk_factor=chunk_factor)
 
         return self
 

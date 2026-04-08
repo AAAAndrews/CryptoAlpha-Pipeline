@@ -20,7 +20,7 @@
   {
     "id": 4,
     "task": "evaluator.run_quick() 方法 — Layer 0 快速筛选管道：新增 run_quick() 方法，仅计算 IC/RankIC/ICIR/IC Stats/Rank Autocorrelation (全部已向量化，零 groupby.apply)，设置 _quick_mode 标志",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {
