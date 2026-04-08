@@ -54,6 +54,8 @@ def run_factor_research(
     viz_output: str | None = "output/viz/",
     # 分块处理参数 / Chunked processing parameters
     chunk_size: int | None = None,
+    # 运行模式参数 / Run mode parameters
+    mode: str = "quick",
 ):
     """
     执行完整因子投研流程 / Execute the full factor research pipeline.
@@ -78,6 +80,8 @@ def run_factor_research(
         leak_block: 检测 FAIL 时是否阻断 pipeline / Block pipeline on detection failure
         viz_output: 可视化输出目录，None 时跳过可视化 / Visualization output dir, None to skip
         chunk_size: 分块大小，None 时全量模式 / Chunk size, None for full mode
+        mode: 运行模式，"quick" 仅计算 Layer 0 指标，"full" 计算全部层级 (default: "quick")
+              Run mode, "quick" for Layer 0 only, "full" for all layers
         tuple: (evaluator, report) — FactorEvaluator 实例和摘要报告 DataFrame
     """
     pipeline_start = time.time()
@@ -87,7 +91,7 @@ def run_factor_research(
     print(f"  CryptoAlpha Factor Research Pipeline")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  factor={factor_name}  label={return_label}  "
-          f"n_groups={n_groups}  cost={cost_rate}")
+          f"n_groups={n_groups}  cost={cost_rate}  mode={mode}")
     print("=" * 70)
 
     # ── Step 1: 数据加载 / Data Loading ──────────────────────────
@@ -207,8 +211,9 @@ def run_factor_research(
         leak_report = None
 
     # ── Step 5: 绩效检验 / Factor Evaluation ─────────────────────
+    mode_label = "Quick Screen (Layer 0)" if mode == "quick" else "Full Analysis (Layer 0~3)"
     print(f"\n{'─' * 70}")
-    print(f"  [Step 5/8] Factor Evaluation (Tear Sheet)")
+    print(f"  [Step 5/8] Factor Evaluation — {mode_label}")
     print(f"{'─' * 70}")
 
     from FactorAnalysis.evaluator import FactorEvaluator
@@ -226,7 +231,10 @@ def run_factor_research(
     )
 
     step_start = time.time()
-    ev.run_all()
+    if mode == "quick":
+        ev.run_quick()
+    else:
+        ev.run_all()
     print(f"  Evaluation completed in {time.time() - step_start:.1f}s")
 
     # ── Step 6: 报告输出 / Report Output ─────────────────────────
@@ -234,7 +242,12 @@ def run_factor_research(
     print(f"  [Step 6/8] Report Generation")
     print(f"{'─' * 70}")
 
-    report = ev.generate_report()
+    # quick 模式仅输出 metrics + turnover，full 模式输出全部
+    # quick mode outputs metrics + turnover only, full mode outputs all
+    if mode == "quick":
+        report = ev.generate_report(select=["metrics", "turnover"])
+    else:
+        report = ev.generate_report()
     elapsed = time.time() - pipeline_start
 
     # 摘要打印 / Summary printout
@@ -420,6 +433,13 @@ def main():
         help="分块大小，控制内存峰值。None 为全量模式 (default: None)",
     )
 
+    # 运行模式参数 / Run mode parameters
+    parser.add_argument(
+        "--mode", type=str, default="quick",
+        choices=["quick", "full"],
+        help="运行模式: quick=快速筛选 (Layer 0), full=全量分析 (Layer 0~3) (default: quick)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -448,6 +468,7 @@ def main():
             leak_block=args.leak_block,
             viz_output=viz_dir,
             chunk_size=args.chunk_size,
+            mode=args.mode,
         )
     except KeyboardInterrupt:
         print("\n\nUser interrupts and exits the program...")

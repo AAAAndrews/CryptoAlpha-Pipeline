@@ -3,6 +3,25 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 5] report.py select 参数 + run_factor_research.py --mode 参数
+- 修改文件: FactorAnalysis/report.py, scripts/run_factor_research.py
+- report.py: generate_report() 增加 select 参数，委托给 evaluator.generate_report(select=...)，消除重复逻辑
+- run_factor_research.py: 新增 --mode {quick,full} CLI 参数 (默认 quick)
+  - quick 模式: 调用 run_quick() + generate_report(select=["metrics", "turnover"])
+  - full 模式: 调用 run_all() + generate_report() (全量)
+- 头部信息显示当前 mode，Step 5 标题区分 Quick Screen / Full Analysis
+- 向后兼容: select=None 时输出全部已计算板块
+- 验证内容:
+  - run_quick() + select=["metrics", "turnover"]: 仅含 IC/RankIC/ICIR/IC_stats/rank_autocorr 列
+  - run_all() + generate_report(): 含全部 24 列 (metrics+grouping+curves+turnover+neutralize)
+  - select=["metrics"]: 仅含 IC 相关列
+  - --help 正确显示 --mode {quick,full}
+- 回归测试: 13/13 P0 chunk/evaluator tests passed, 136 total tests passed (1 pre-existing flaky)
+- 用法:
+  - CLI: python scripts/run_factor_research.py --factor X --mode quick
+  - CLI: python scripts/run_factor_research.py --factor X --mode full
+  - API: generate_report(ev, select=["metrics", "turnover"])
+
 [2026-04-09 Task 4] Layer 0 快速筛选管道 run_quick() — IC/RankIC/ICIR/IC Stats/Rank Autocorrelation
 - 修改文件: FactorAnalysis/evaluator.py
 - 新增 run_quick() 方法: 仅计算 Layer 0 纯向量化指标 (IC/RankIC/ICIR/IC Stats/Rank Autocorrelation)

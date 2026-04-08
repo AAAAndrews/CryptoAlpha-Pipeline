@@ -26,7 +26,7 @@
   {
     "id": 5,
     "task": "report.py select 参数 + run_factor_research.py --mode 参数：report.generate_report() 增加 select 参数按需输出指定模块结果；run_factor_research.py 增加 --mode quick/full CLI 参数，默认 quick",
-    "passes": false,
+    "passes": true,
     "deps": [4]
   },
   {
