@@ -50,7 +50,7 @@
   {
     "id": 9,
     "task": "P2 - grouping.quantile_group numpy 向量化：将 groupby.apply(_assign_group) 替换为 unstack + numpy percentile + searchsorted 向量化分组，保持 zero_aware 模式兼容，处理 duplicates='drop' 等价逻辑",
-    "passes": false,
+    "passes": true,
     "deps": [3]
   },
   {

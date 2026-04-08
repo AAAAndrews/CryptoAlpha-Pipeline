@@ -3,6 +3,19 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 9] P2 grouping.quantile_group numpy 向量化 — 全量回归通过
+- 修改文件: FactorAnalysis/grouping.py (quantile_group + _assign_group_vec + _assign_zero_aware_vec)
+- 将 groupby.apply(_assign_group) 替换为 unstack + numpy 逐行 percentile + searchsorted 向量化计算
+- 核心变更:
+  1. factor_valid.unstack() → 2D numpy 矩阵 (timestamp × symbol)
+  2. 逐行 np.quantile(vals, linspace(0,1,n_groups+1)) 计算分位数边界
+  3. edges[1:] != edges[:-1] 去除重复边界 (等价于 duplicates='drop')
+  4. np.searchsorted(edges, vals, side='right') - 1 赋组标签 (匹配 pd.qcut right=True)
+  5. zero_aware 模式: 按正负拆分后各自调用 _assign_group_vec，正值标签偏移
+- 保持 n_groups/zero_aware 参数完全兼容，返回类型和索引不变
+- 回归测试: 21+37+12+11+608+68+157 = 914 checks passed (grouping/chunked/group_cache/portfolio_labels/P0_chunk/P1_portfolio/quick_screen)
+- 用法: 无 API 变更，quantile_group(factor, n_groups=5, zero_aware=False) 接口不变
+
 [2026-04-09 Task 8] P1 portfolio 向量化数值一致性测试 — 68/68 checks passed
 - 新增测试: tests/test_p1_portfolio_vectorized.py (68/68 通过)
 - 11 个测试模块:
