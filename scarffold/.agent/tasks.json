@@ -32,7 +32,7 @@
   {
     "id": 6,
     "task": "测试 - Quick Screen 管道功能验证 (tests/test_quick_screen.py)：验证 run_quick() 仅产出 Layer 0 指标 (IC/RankIC/ICIR/IC_stats/rank_autocorr)、不含 portfolio/turnover/neutralize、6 种 mock 场景 × 8 指标正确、--mode quick CLI 参数生效、report select 参数正确过滤输出",
-    "passes": false,
+    "passes": true,
     "deps": [5]
   },
   {

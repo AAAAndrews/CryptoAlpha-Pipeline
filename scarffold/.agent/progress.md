@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 6] Quick Screen 管道功能验证 — 157/157 checks passed
+- 新增测试: tests/test_quick_screen.py (157/157 通过)
+- 8 个测试模块:
+  1. run_quick() 仅产出 Layer 0 指标 (IC/RankIC/ICIR/IC_stats/rank_autocorr)，Layer 1~3 全为 None
+  2. run_all() 后 _quick_mode 保持 False
+  3. 6 种 mock 场景 × 8 指标全量模式数值一致性 (diff = 0.00e+00)
+  4. 6 种 mock 场景 × 8 指标分块模式数值一致性 (diff = 0.00e+00)
+  5. report select 参数过滤: select=["metrics","turnover"] 正确包含 IC+rank_autocorr 列、排除 curves/neutralize
+  6. report.generate_report 模块级代理正确
+  7. --mode quick/full CLI 参数解析 + 无效值拒绝
+  8. ic_stats 字段完整性 (7 个 key 全部有限值)
+- 回归测试: 13/13 P0 chunk/report tests passed
+- 用法: python tests/test_quick_screen.py
+
 [2026-04-09 Task 5] report.py select 参数 + run_factor_research.py --mode 参数
 - 修改文件: FactorAnalysis/report.py, scripts/run_factor_research.py
 - report.py: generate_report() 增加 select 参数，委托给 evaluator.generate_report(select=...)，消除重复逻辑
