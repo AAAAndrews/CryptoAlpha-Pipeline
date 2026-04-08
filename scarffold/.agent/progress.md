@@ -3,6 +3,20 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 13] E2E 性能基准测试 — 531/531 checks passed
+- 新增测试: tests/test_p0p3_e2e_benchmark.py (531/531 通过)
+- 8 个测试模块:
+  1. P0-P3 子步骤独立计时 (500×100): run_metrics 0.08s, run_grouping 0.13s, run_curves 0.15s, run_turnover 0.21s, run_neutralize 0.31s
+  2. run_all() 优化路径 vs 旧路径: 1.89x speedup, 47.2% reduction (≥40% 阈值通过)
+  3. run_quick() 耗时 0.09s (远低于 15s 阈值), Layer 0 指标正确, Layer 1~3 全为 None
+  4. 优化前后 25 个报告字段 diff < 1e-8 + 8 个核心数据对象 (ic/rank_ic/curves/turnover/autocorr/neutralized) 一致
+  5. 6 种 mock 场景 × 两次独立 run_all() 所有报告字段确定性 (diff < 1e-8)
+  6. 5 种场景 chunk_size=50 分块模式 vs 全量模式一致性 (IC/RankIC/日收益率/报告标量)
+  7. 6 种场景 run_all() 产出全部 24 个预期字段 + 8 个内部数据对象非空
+  8. 真实数据端到端回归 (条件执行, 本地数据不可用时 SKIP)
+- 旧路径模拟: _clear_group_cache() 强制各子方法重新计算 quantile_group, 模拟优化前冗余调用
+- 用法: python tests/test_p0p3_e2e_benchmark.py
+
 [2026-04-09 Task 12] P3 neutralize 合并数值一致性测试 — 106/106 checks passed
 - 新增测试: tests/test_p3_neutralize_merge.py (106/106 通过)
 - 8 个测试模块:

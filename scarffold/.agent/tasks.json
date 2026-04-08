@@ -74,7 +74,7 @@
   {
     "id": 13,
     "task": "E2E 性能基准测试 (tests/test_p0p3_e2e_benchmark.py)：mock 数据测量 P0-P3 优化后各子步骤耗时、验证 run_all() 总耗时降低 50%+、run_quick() 耗时 < 15s (评估环节)、优化前后所有报告字段 diff < 1e-8、小批量真实数据端到端回归",
-    "passes": false,
+    "passes": true,
     "deps": [6, 12]
   },
   {
