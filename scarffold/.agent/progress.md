@@ -3,6 +3,21 @@
 > Append newest entries to the top in this format:
 > `[YYYY-MM-DD HH:MM] summary`
 
+[2026-04-09 Task 12] P3 neutralize 合并数值一致性测试 — 106/106 checks passed
+- 新增测试: tests/test_p3_neutralize_merge.py (106/106 通过)
+- 8 个测试模块:
+  1. 6 种 mock 场景 × neutralized_curve vs reference groupby.transform diff < 1e-10 (最大 diff=0.00e+00)
+  2. demeaned/group_adjust 四种组合 × 6 场景一致性 (最大 diff=3.55e-15)
+  3. _raw 模式一致性: _raw=True 和 _raw=False 分别验证 (diff=0.00e+00)
+  4. groups=int vs groups=Series (预计算标签) 一致性 (diff=0.00e+00)
+  5. evaluator chunk_size 分块模式 (30/50/60) vs 全量 diff < 1e-8 (最大 diff=9.77e-15)
+  6. 边界情况: n_groups < 2 ValueError, 非法类型 ValueError, 全 NaN factor 正确返回
+  7. 不同 n_groups (2/3/5/10) 一致性 (diff=0.00e+00)
+  8. 结构验证: 曲线长度/起始值/索引类型/dtype (6 场景 × 4 项全通过)
+- Reference 实现: 使用旧 groupby([timestamp, group]).transform("mean") 两次独立 groupby 操作，
+  验证 P3 numpy 向量化 unstack 单次矩阵操作结果数值等价
+- 用法: python tests/test_p3_neutralize_merge.py
+
 [2026-04-09 Task 11] P3 neutralize 内部操作合并 — 108/108 neutralize tests passed, 1334 total passed
 - 修改文件: FactorAnalysis/neutralize.py (calc_neutralized_curve)
 - 将 groupby([timestamp, group]).transform("mean") 两次独立 groupby 操作替换为 unstack + numpy 向量化计算
