@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Union
@@ -13,10 +14,11 @@ def read_symbol_klines(
     interval: str,
     start_time: Optional[Union[int, datetime]] = None,
     end_time: Optional[Union[int, datetime]] = None,
+    columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Read the Feather file for the specified trading pair and filter based on time range.
-    
+
     parameter:
         db_root_path (str): Database storage root path.
         exchange (str): Exchanges (such as'binance'）。
@@ -25,32 +27,33 @@ def read_symbol_klines(
         interval (str): KLine period (1h, 1d, etc.).
         start_time (Optional[Union[int, datetime]]): Start time (supports millisecond stamp or datetime object).
         end_time (Optional[Union[int, datetime]]): end time.
-        
+        columns (Optional[List[str]]): Columns to read. None reads all columns.
+
     return:
         pd.DataFrame: Data frame containing candlestick data. Returns an empty DataFrame if the file does not exist.
     """
     file_path = build_kline_filepath(db_root_path, exchange, symbol, kline_type, interval)
-    
+
     if not os.path.exists(file_path):
         return pd.DataFrame()
-    
+
     try:
-        df = pd.read_feather(file_path)
+        df = pd.read_feather(file_path, columns=columns)
         if df.empty:
             return df
-        
+
         # Add symbol column
         df['symbol'] = symbol
-        
+
         # time filter
         if start_time is not None:
             start_ts = parse_time(start_time)
             df = df[df['timestamp'] >= start_ts]
-            
+
         if end_time is not None:
             end_ts = parse_time(end_time)
             df = df[df['timestamp'] <= end_ts]
-            
+
         return df
     except Exception as e:
         print(f"Error reading {file_path}: {e}")
@@ -64,11 +67,12 @@ def load_multi_klines(
     interval: str = "1h",
     start_time: Optional[Union[int, datetime]] = None,
     end_time: Optional[Union[int, datetime]] = None,
-    num_workers: int = 8
+    num_workers: int = 8,
+    columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Concurrently read the K-line data of multiple trading pairs and merge them into a long format (Long Format) data frame.
-    
+
     parameter:
         db_root_path (str): Database root path.
         exchange (str): Exchange.
@@ -78,7 +82,8 @@ def load_multi_klines(
         start_time (Optional[Union[int, datetime]]): Start time filtering.
         end_time (Optional[Union[int, datetime]]): End time filter.
         num_workers (int): Number of threads to read in parallel.
-        
+        columns (Optional[List[str]]): Columns to read from each feather file. None reads all columns.
+
     return:
         pd.DataFrame: All data merged and sorted by time and transaction pairs.
     """
@@ -90,18 +95,19 @@ def load_multi_klines(
             return pd.DataFrame()
 
     all_dfs = []
-    
+
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         future_to_symbol = {
             executor.submit(
-                read_symbol_klines, 
-                db_root_path, 
-                exchange, 
-                symbol, 
-                kline_type, 
-                interval, 
-                start_time, 
-                end_time
+                read_symbol_klines,
+                db_root_path,
+                exchange,
+                symbol,
+                kline_type,
+                interval,
+                start_time,
+                end_time,
+                columns,
             ): symbol for symbol in symbols
         }
         
@@ -119,10 +125,13 @@ def load_multi_klines(
     
     # Merge all dataframes
     combined_df = pd.concat(all_dfs, ignore_index=True)
-    
+
     # Sort by time
+    # pd.factorize + np.lexsort 替代 sort_values，避免字符串比较开销
+    # pd.factorize + np.lexsort instead of sort_values, avoiding string comparison cost
     if 'timestamp' in combined_df.columns:
-        combined_df.sort_values(['timestamp', 'symbol'], inplace=True)
-        combined_df.reset_index(drop=True, inplace=True)
+        symbol_codes, _ = pd.factorize(combined_df['symbol'])
+        order = np.lexsort((symbol_codes, combined_df['timestamp'].values))
+        combined_df = combined_df.iloc[order].reset_index(drop=True)
         
     return combined_df

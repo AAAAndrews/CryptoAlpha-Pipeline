@@ -94,6 +94,9 @@ class KlineLoader(BaseDataLoader):
         for server-side filtering. When both time filters are None and symbols
         is None, a full-sample load is performed.
         """
+        # symbol 列由 read_symbol_klines 代码添加，不在 feather 文件中
+        # symbol column is added programmatically, not stored in feather files
+        read_cols = list(_REQUIRED_COLUMNS - {"symbol"})
         df = load_multi_klines(
             db_root_path=self.db_root_path,
             exchange=self.exchange,
@@ -103,6 +106,7 @@ class KlineLoader(BaseDataLoader):
             start_time=self.start_time,
             end_time=self.end_time,
             num_workers=self.num_workers,
+            columns=read_cols,
         )
 
         if df.empty:
@@ -138,8 +142,8 @@ class KlineLoader(BaseDataLoader):
                 f"Available columns: {list(df.columns)}"
             )
 
-        # 排序 / Sort by timestamp + symbol
-        df = df.sort_values(["timestamp", "symbol"]).reset_index(drop=True)
+        # 排序由 load_multi_klines 保证，此处无需重复
+        # Sorting is guaranteed by load_multi_klines, skip redundant sort
 
         # 跳过校验时直接返回 / Skip validation and return early
         if not self.validate:
