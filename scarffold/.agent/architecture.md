@@ -67,12 +67,15 @@ CryptoAlpha-Pipeline/
 │           └── worldquant_ops.py
 │
 ├── FactorLib/                       # 独立因子库模块
-│   ├── __init__.py
+│   ├── __init__.py                  # [更新] 导出新组件 (OperatorFactor, converter)
 │   ├── base.py                      # BaseFactor 抽象基类
 │   ├── alpha_momentum.py            # Alpha1 动量因子
 │   ├── alpha_volatility.py          # Alpha2 波动率因子
-│   ├── alpha_price_range.py         # [新增] Alpha3 价格振幅因子 (open-close)/(high-low)
-│   └── registry.py                  # 因子注册表
+│   ├── alpha_price_range.py         # Alpha3 价格振幅因子 (open-close)/(high-low)
+│   ├── registry.py                  # 因子注册表
+│   ├── converter.py                 # [新增] DataFrame ↔ 3D ndarray 双向转换 (FR-1)
+│   ├── operator_factor.py           # [新增] 算子组合因子类 OperatorFactor (FR-2)
+│   └── ops.py                       # [新增] deap_alpha 算子便捷导入入口 (FR-3)
 │
 ├── FactorAnalysis/                  # 因子绩效检验模块
 │   ├── __init__.py                  # 公共 API 导出
@@ -215,8 +218,32 @@ Full Analysis (全量分析):
   Layer 3 (依赖 demean+portfolio): Neutralized Curve
 ```
 
+### Operator Factor Flow (算子组合因子流程) — [新增]
+```
+用户定义 compute_fn:
+  def icir_factor(close_2d):
+      return divide(rank(ts_mean(close_2d, 10)), rank(ts_std_dev(close_2d, 10)))
+       ↓
+OperatorFactor(fields_mapping={'close': 'close'}, compute_fn=icir_factor)
+       ↓
+factor.calculate(data) 自动检测输入类型:
+  ├── pd.DataFrame 输入 → df_to_3d(data, fields) → 3D ndarray (fields, assets, time)
+  └── np.ndarray 输入 → 直接使用 (跳过转换)
+       ↓
+字段提取: array_3d[fields.index('close')] → 2D slice (assets, time)
+       ↓
+compute_fn(close_2d) → 2D factor values (assets, time)
+       ↓
+ndarray_to_series(values, symbols, timestamps) → pd.Series MultiIndex (timestamp, symbol)
+       ↓
+输出格式与现有 BaseFactor.calculate() 完全兼容，FactorAnalysis 零修改
+```
+
 ## Key Design Decisions
 - FactorLib 与 deap_alpha 解耦: FactorLib 面向手动定义因子, deap_alpha 面向遗传编程自动挖掘
+- **FactorLib 复用 deap_alpha 算子**: OperatorFactor 类通过 compute_fn 接受任意算子组合, ops.py 作为统一导入入口, 仅 re-export 不修改实现
+- **数据格式桥接**: converter.py 提供 DataFrame ↔ 3D ndarray 双向转换, df_to_3d 保证 symbol 排序一致性, ndarray_to_series 输出 MultiIndex 格式与现有因子完全兼容
+- **OperatorFactor 双输入模式**: calculate() 自动检测 DataFrame / ndarray 输入, ndarray 直接使用跳过转换, 适用于已处于 3D 格式的数据流
 - FactorAnalysis 独立于 DEAP: 使用 pandas DataFrame 作为主要数据格式, 兼容 FactorLib 输出
 - 重试机制放在 API 调用层 (market_api.py), 对上层透明
 - 活跃交易对校验放在脚本入口层 (scripts/), 避免深度侵入核心模块

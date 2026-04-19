@@ -1,86 +1,92 @@
 [
   {
     "id": 1,
-    "task": "P0 - evaluator 各 run_* 方法增加可选 chunk 列表参数：run_metrics/run_grouping/run_curves/run_turnover/run_neutralize 增加 chunk_factor/chunk_returns/chunk_groups 可选参数，内部检查参数是否已提供，有则跳过 split_into_chunks 调用，不传时行为不变 (向后兼容)",
-    "passes": true,
+    "task": "converter.py — df_to_3d 函数实现: DataFrame → 3D ndarray (fields, assets, time)，按 symbol 排序、timestamp 升序、正确处理 NaN、去除无效 symbol",
+    "passes": false,
     "deps": []
   },
   {
     "id": 2,
-    "task": "P0 - run_all() 一次性计算 chunk 并分发：在 run_all() 入口处一次性对 factor/returns/group_labels 执行 split_into_chunks，将 chunk 列表传递给各 run_* 方法，消除重复 isin 过滤",
-    "passes": true,
-    "deps": [1]
+    "task": "converter.py — ndarray_to_series 函数实现: 2D ndarray (assets, time) → pd.Series MultiIndex (timestamp, symbol)，NaN 正确传播，格式与 AlphaMomentum.calculate() 返回值一致",
+    "passes": false,
+    "deps": []
   },
   {
     "id": 3,
-    "task": "测试 - P0 chunk 一致性 + 向后兼容 (tests/test_p0_chunk_cache.py)：验证 chunk_list 传入 vs 内部 split 结果完全一致、chunk_list=None 时行为不变、chunk_size=None 时正常、6 种 mock 场景 × 全部报告字段 diff < 1e-10、分块模式正确",
-    "passes": true,
-    "deps": [2]
+    "task": "测试 — converter.py 单元测试 (tests/test_converter.py): df_to_3d 基础转换、symbol 排序一致性、timestamp 升序、NaN 传播、无效 symbol 过除、空数据边界",
+    "passes": false,
+    "deps": [1, 2]
   },
   {
     "id": 4,
-    "task": "evaluator.run_quick() 方法 — Layer 0 快速筛选管道：新增 run_quick() 方法，仅计算 IC/RankIC/ICIR/IC Stats/Rank Autocorrelation (全部已向量化，零 groupby.apply)，设置 _quick_mode 标志",
-    "passes": true,
+    "task": "测试 — converter.py 补充测试 (tests/test_converter.py 续): ndarray_to_series MultiIndex 格式、NaN 传播、dtype float64、与 AlphaMomentum 输出格式对比、往返转换一致性 (df_to_3d → ndarray_to_series)",
+    "passes": false,
     "deps": [3]
   },
   {
     "id": 5,
-    "task": "report.py select 参数 + run_factor_research.py --mode 参数：report.generate_report() 增加 select 参数按需输出指定模块结果；run_factor_research.py 增加 --mode quick/full CLI 参数，默认 quick",
-    "passes": true,
-    "deps": [4]
+    "task": "operator_factor.py — OperatorFactor 类定义: 继承 BaseFactor，接受 fields_mapping / compute_fn / name 参数，__init__ 验证 fields_mapping 非空、compute_fn 可调用",
+    "passes": false,
+    "deps": [1, 2]
   },
   {
     "id": 6,
-    "task": "测试 - Quick Screen 管道功能验证 (tests/test_quick_screen.py)：验证 run_quick() 仅产出 Layer 0 指标 (IC/RankIC/ICIR/IC_stats/rank_autocorr)、不含 portfolio/turnover/neutralize、6 种 mock 场景 × 8 指标正确、--mode quick CLI 参数生效、report select 参数正确过滤输出",
-    "passes": true,
+    "task": "operator_factor.py — calculate() 方法: 自动检测输入类型 (DataFrame → df_to_3d 转换, ndarray → 直接使用)，字段提取 array_3d[fields.index(name)]，调用 compute_fn，ndarray_to_series 转换输出",
+    "passes": false,
     "deps": [5]
   },
   {
     "id": 7,
-    "task": "P1 - portfolio._portfolio_curves_core numpy 向量化：将 groupby.apply(_portfolio_returns) 替换为 unstack + numpy boolean mask 向量化计算 (labels.unstack → 2D 矩阵, np.where(mask, returns, nan).mean(axis=1))，保持 rebalance_freq/_raw/group_labels 参数兼容",
-    "passes": true,
-    "deps": [3]
+    "task": "测试 — OperatorFactor 单元测试 (tests/test_operator_factor.py): DataFrame 输入、ndarray 输入、单字段/多字段、字段提取正确性、name 参数、无效输入类型报错",
+    "passes": false,
+    "deps": [6]
   },
   {
     "id": 8,
-    "task": "测试 - P1 portfolio 向量化数值一致性 (tests/test_p1_portfolio_vectorized.py)：6 种 mock 场景 × long/short/hedge 三曲线 diff < 1e-10、rebalance_freq > 1 一致性、_raw 模式一致性、不同 top_k/bottom_k 组合、含 NaN 数据、chunk_size 分块模式正确",
-    "passes": true,
-    "deps": [7]
+    "task": "ops.py — deap_alpha 算子便捷导入入口: 从 arithmetic_ops / timeseries_ops / cross_section_ops re-export 所有公共算子，命名冲突以截面算子优先",
+    "passes": false,
+    "deps": []
   },
   {
     "id": 9,
-    "task": "P2 - grouping.quantile_group numpy 向量化：将 groupby.apply(_assign_group) 替换为 unstack + numpy percentile + searchsorted 向量化分组，保持 zero_aware 模式兼容，处理 duplicates='drop' 等价逻辑",
-    "passes": true,
-    "deps": [3]
+    "task": "测试 — ops.py 导入验证 (tests/test_ops_reexport.py): 验证所有预期符号可导入、命名冲突解析 (rank 来自 cross_section_ops)、无循环导入",
+    "passes": false,
+    "deps": [8]
   },
   {
     "id": 10,
-    "task": "测试 - P2 quantile_group 向量化数值一致性 (tests/test_p2_quantile_vectorized.py)：6 种 mock 场景 × group labels Series diff < 1e-10、zero_aware=True/False 一致性、不同 n_groups (3/5/10)、含 NaN 数据、含大量重复值 (ties)、chunk_size 分块模式正确",
-    "passes": true,
-    "deps": [9]
+    "task": "__init__.py — 更新 FactorLib 公共 API: 导出 OperatorFactor / df_to_3d / ndarray_to_series，不自动注册 OperatorFactor 到全局注册表，from FactorLib import * 向后兼容",
+    "passes": false,
+    "deps": [5, 8]
   },
   {
     "id": 11,
-    "task": "P3 - neutralize 内部操作合并：将 calc_neutralized_curve 中的 demean + re-rank 合并为单次 unstack 矩阵操作 (避免两次独立 groupby)，复用 P1 向量化 portfolio 计算对冲收益",
-    "passes": true,
-    "deps": [8, 10]
+    "task": "集成测试 — OperatorFactor 端到端 (tests/test_operator_factor.py 续): 使用真实 deap_alpha 算子组合 (rank + ts_mean + divide) 在 mock DataFrame 上计算，验证输出结构与 FactorAnalysis 兼容",
+    "passes": false,
+    "deps": [7, 9, 10]
   },
   {
     "id": 12,
-    "task": "测试 - P3 neutralize 合并数值一致性 (tests/test_p3_neutralize_merge.py)：6 种 mock 场景 × neutralized_curve diff < 1e-10、demeaned/group_adjust 四种组合、_raw 模式、chunk_size 分块模式正确",
-    "passes": true,
+    "task": "算子化验证 — AlphaMomentum 等价因子 + 数值一致性测试: 用 OperatorFactor 实现 close/ts_delay(close,N)-1，与 AlphaMomentum(lookback=N) 对比 mock 数据 diff < 1e-8",
+    "passes": false,
     "deps": [11]
   },
   {
     "id": 13,
-    "task": "E2E 性能基准测试 (tests/test_p0p3_e2e_benchmark.py)：mock 数据测量 P0-P3 优化后各子步骤耗时、验证 run_all() 总耗时降低 50%+、run_quick() 耗时 < 15s (评估环节)、优化前后所有报告字段 diff < 1e-8、小批量真实数据端到端回归",
-    "passes": true,
-    "deps": [6, 12]
+    "task": "算子化验证 — AlphaVolatility 等价因子 + 数值一致性测试: 用 OperatorFactor 实现 ts_std_dev(close/ts_delay(close,1), N)，与 AlphaVolatility 对比 diff < 1e-8",
+    "passes": false,
+    "deps": [11]
   },
   {
     "id": 14,
-    "task": "全量回归测试验证：运行 tests/ 目录所有既有测试确认无回归，所有现有公共 API 签名不变，FactorEvaluator 所有公共属性不变，chunk_size 分块模式正常工作，run_quick() 新增 API 可正常调用",
-    "passes": true,
-    "deps": [13]
+    "task": "算子化验证 — AlphaPriceRange 等价因子 + 数值一致性测试: 用 OperatorFactor 实现 (open-close)/(high-low)，与 AlphaPriceRange 对比 diff < 1e-8",
+    "passes": false,
+    "deps": [11]
+  },
+  {
+    "id": 15,
+    "task": "全量回归测试: 运行 tests/ 目录所有既有测试，确认 1350+ 测试零回归，新增组件不影响现有 FactorLib / FactorAnalysis / deap_alpha 功能",
+    "passes": false,
+    "deps": [14]
   }
 ]
